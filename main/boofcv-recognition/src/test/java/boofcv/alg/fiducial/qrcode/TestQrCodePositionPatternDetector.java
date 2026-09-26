@@ -1,0 +1,235 @@
+/*
+ * Copyright (c) 2023, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.fiducial.qrcode;
+
+import boofcv.alg.fiducial.calib.squares.SquareNode;
+import boofcv.alg.filter.binary.ThresholdImageOps;
+import boofcv.alg.misc.ImageMiscOps;
+import boofcv.alg.shapes.polygon.DetectPolygonBinaryGrayRefine;
+import boofcv.factory.shape.ConfigPolygonDetector;
+import boofcv.factory.shape.FactoryShapeDetector;
+import boofcv.io.image.ConvertBufferedImage;
+import boofcv.struct.image.GrayF32;
+import boofcv.struct.image.GrayU8;
+import boofcv.testing.BoofStandardJUnit;
+import georegression.struct.affine.Affine2D_F64;
+import georegression.struct.shapes.Polygon2D_F64;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Test;
+
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class TestQrCodePositionPatternDetector extends BoofStandardJUnit {
+	@Test void easy() {
+		GrayF32 image = render(null,
+				new PP(40, 60, 70), new PP(140, 60, 70), new PP(40, 150, 70));
+
+		GrayU8 binary = new GrayU8(image.width, image.height);
+
+		ThresholdImageOps.threshold(image, binary, 100, true);
+
+		QrCodePositionPatternDetector<GrayF32> alg = createAlg();
+		var graphGenerator = new QrCodePositionPatternGraphGenerator(2);
+
+		// Run it multiple times to make sure reset is done correctly
+		for (int trial = 0; trial < 2; trial++) {
+			alg.process(image, binary);
+
+			List<PositionPatternNode> list = alg.getPositionPatterns().toList();
+
+			// NOTE: This should be decoupled. These two classes used to be a single class
+			graphGenerator.process(list);
+
+			assertEquals(3, list.size());
+
+			checkNode(40 + 35, 60 + 35, 2, list);
+			checkNode(140 + 35, 60 + 35, 1, list);
+			checkNode(40 + 35, 150 + 35, 1, list);
+		}
+	}
+
+	@Test void withLensDistortion() {
+		// Render QR Code in a simulated world with lens distortion
+		QrCodeDistortedChecks helper = new QrCodeDistortedChecks();
+
+		helper.render();
+
+//		SimulatePlanarWorld simulator = helper.simulator;
+//		QrCode qr = helper.qr;
+//		double r = helper.r;
+
+		// Compute location of each square in the image and see if the correct coordinates are found
+//		double mw = 1.5/qr.getNumberOfModules();
+		Polygon2D_F64[] expected = new Polygon2D_F64[3];
+		for (int i = 0; i < 3; i++) {
+			expected[i] = new Polygon2D_F64(4);
+		}
+		helper.setLocation(expected[0], expected[1], expected[2]);
+
+		// Remove lens distortion from expected corner locations
+		for (int i = 0; i < expected.length; i++) {
+			helper.distToUndist(expected[i]);
+		}
+
+		QrCodePositionPatternDetector<GrayF32> alg = createAlg();
+
+		alg.setLensDistortion(helper.intrinsic.width, helper.intrinsic.height, helper.distortion);
+		alg.process(helper.image, helper.binary);
+		assertEquals(3, alg.getPositionPatterns().size);
+
+		// see if the squares all match up
+		int matches = 0;
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				if (expected[i].isEquivalent(alg.getPositionPatterns().get(j).square, 3)) {
+					matches++;
+					break;
+				}
+			}
+		}
+		assertEquals(3, matches);
+	}
+
+	private void checkNode( double cx, double cy, int numEdges,
+							List<PositionPatternNode> list ) {
+		for (int i = 0; i < list.size(); i++) {
+			PositionPatternNode p = list.get(i);
+			if (p.center.distance(cx, cy) < 3) {
+				assertEquals(numEdges, p.getNumberOfConnections());
+				return;
+			}
+		}
+		fail("No match");
+	}
+
+	@Test void checkPositionPatternAppearance() {
+		GrayF32 image = render(null, new PP(40, 60, 70));
+
+		QrCodePositionPatternDetector<GrayF32> alg = createAlg();
+
+		Polygon2D_F64 square = square(40, 60, 70);
+
+		alg.interpolate.setImage(image);
+
+		assertTrue(alg.checkPositionPatternAppearance(square, 100));
+
+		// fill in the inner "stone"
+		ImageMiscOps.fillRectangle(image, 0, 40, 60, 70, 70);
+		assertFalse(alg.checkPositionPatternAppearance(square, 100));
+	}
+
+	public static SquareNode squareNode( int x0, int y0, int width ) {
+		Polygon2D_F64 square = square(x0, y0, width);
+
+		SquareNode node = new SquareNode();
+		node.square = square;
+		node.largestSide = width;
+		node.smallestSide = width;
+		node.center.setTo(x0 + width/2, y0 + width/2);
+		for (int i = 0; i < 4; i++) {
+			node.sideLengths[i] = width;
+		}
+
+		return node;
+	}
+
+	public static Polygon2D_F64 square( int x0, int y0, int width ) {
+		Polygon2D_F64 square = new Polygon2D_F64(4);
+		square.get(0).setTo(x0, y0);
+		square.get(1).setTo(x0 + width, y0);
+		square.get(2).setTo(x0 + width, y0 + width);
+		square.get(3).setTo(x0, y0 + width);
+		return square;
+	}
+
+	@Test void positionSquareIntensityCheck() {
+
+		float[] positive = new float[]{10, 200, 10, 10, 10, 200, 10};
+
+		assertTrue(QrCodePositionPatternDetector.positionSquareIntensityCheck(positive, 100));
+
+		for (int i = 0; i < 7; i++) {
+			float[] negative = positive.clone();
+
+			negative[i] = negative[i] < 100 ? 200 : 10;
+			assertFalse(QrCodePositionPatternDetector.positionSquareIntensityCheck(negative, 100));
+		}
+	}
+
+	private QrCodePositionPatternDetector<GrayF32> createAlg() {
+
+		ConfigPolygonDetector config = new ConfigPolygonDetector(4, 4);
+		config.detector.clockwise = false;
+		DetectPolygonBinaryGrayRefine<GrayF32> squareDetector =
+				FactoryShapeDetector.polygon(config, GrayF32.class);
+
+		return new QrCodePositionPatternDetector<>(squareDetector);
+	}
+
+	private GrayF32 render( @Nullable Affine2D_F64 affine, PP... pps ) {
+
+		BufferedImage image = new BufferedImage(300, 400, BufferedImage.TYPE_INT_RGB);
+
+		Graphics2D g2 = image.createGraphics();
+		g2.setColor(Color.WHITE);
+		g2.fillRect(0, 0, image.getWidth(), image.getHeight());
+
+		if (affine != null) {
+			g2.setTransform(new AffineTransform(affine.a11, affine.a12, affine.a21, affine.a22, affine.tx, affine.ty));
+		}
+
+		for (PP p : pps) {
+			renderPP(g2, p.x0, p.y0, p.width);
+		}
+
+		GrayF32 out = new GrayF32(image.getWidth(), image.getHeight());
+		ConvertBufferedImage.convertFrom(image, out);
+
+//		ShowImages.showWindow(image,"Rendered", true);
+//		try {
+//			Thread.sleep(2000);
+//		} catch (InterruptedException ignore) {}
+
+		return out;
+	}
+
+	private void renderPP( Graphics2D g2, int x0, int y0, int width ) {
+		g2.setColor(Color.BLACK);
+		g2.fillRect(x0, y0, width, width);
+		g2.setColor(Color.WHITE);
+		g2.fillRect(x0 + width/7, y0 + width/7, width*5/7, width*5/7);
+		g2.setColor(Color.BLACK);
+		g2.fillRect(x0 + width*2/7, y0 + width*2/7, width*3/7, width*3/7);
+	}
+
+	private static class PP {
+		int x0, y0, width;
+
+		public PP( int x0, int y0, int width ) {
+			this.x0 = x0;
+			this.y0 = y0;
+			this.width = width;
+		}
+	}
+}

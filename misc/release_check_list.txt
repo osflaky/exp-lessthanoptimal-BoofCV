@@ -1,0 +1,50 @@
+- Do all unit tests pass?
+- Run regression tests
+- Update Version
+   * README.md
+   * Android example should reference the latest BoofCV
+   * build.gradle
+- Set release date in change.txt
+- Make sure all examples work
+- Make sure all applications in evaluation work
+- Make sure android still works
+- Update examples on website
+  * See what needs to be updated since TAG_NAME "git diff --name-status TAG_NAME examples"
+- Make sure external dependencies are meet and everything builds
+  * Android
+
+--- Fresh Checkout ---
+
+VERSION=v0.XX
+git clone --depth 1 -b $VERSION --single-branch --recursive git@github.com:lessthanoptimal/BoofCV.git boofcv
+cd boofcv && ./gradlew autogenerate && rm -rf .git && cd .. && zip -r boofcv-$VERSION-src.zip boofcv
+cd boofcv && ./gradlew createLibraryDirectory && mv boofcv-*-libs .. && cd .. && zip -r boofcv-$VERSION-libs.zip boofcv-$VERSION-libs
+cd boofcv && rm -rf docs/api-web && ./gradlew alljavadocWeb && zip -r api.zip docs/api-web
+
+-- Make Sure Tests Pass Again --
+./gradlew testReport
+
+-- Upload Files ---
+
+scp boofcv-$VERSION-libs.zip pabeles@frs.sourceforge.net:/home/frs/project/boofcv/$VERSION/
+scp boofcv-$VERSION-src.zip pabeles@frs.sourceforge.net:/home/frs/project/boofcv/$VERSION/
+
+--- Create javadoc for websites --
+- Upload api.zip created previously to website
+- Tag git
+- Update version on website
+
+--- Applications
+Update prebuilt applications and demonstrations using https://github.com/lessthanoptimal/BoofApplications
+
+--- Releasing to Maven Central
+
+- Publish SNAPSHOT:
+
+./gradlew publish
+
+- Publish Stable Release:
+
+git clean -fd main && ./gradlew autogenerate && ./gradlew assemble
+./gradlew publishToSonatype -Dorg.gradle.parallel=false && ./gradlew findSonatypeStagingRepository closeSonatypeStagingRepository && ./gradlew findSonatypeStagingRepository releaseSonatypeStagingRepository
+

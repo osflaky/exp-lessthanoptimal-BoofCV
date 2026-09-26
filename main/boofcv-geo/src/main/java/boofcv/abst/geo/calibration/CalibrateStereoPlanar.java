@@ -1,0 +1,418 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.abst.geo.calibration;
+
+import boofcv.abst.geo.bundle.MetricBundleAdjustmentUtils;
+import boofcv.abst.geo.bundle.SceneObservations;
+import boofcv.abst.geo.bundle.SceneStructureMetric;
+import boofcv.alg.geo.bundle.BundleAdjustmentMetricResidualFunction;
+import boofcv.alg.geo.bundle.BundleAdjustmentOps;
+import boofcv.alg.geo.bundle.CodecSceneStructureMetric;
+import boofcv.alg.geo.bundle.cameras.BundlePinholeBrown;
+import boofcv.alg.geo.calibration.CalibrationObservation;
+import boofcv.alg.geo.calibration.ScoreCalibrationFill;
+import boofcv.struct.calib.CameraPinholeBrown;
+import boofcv.struct.calib.StereoParameters;
+import boofcv.struct.geo.PointIndex2D_F64;
+import boofcv.struct.image.ImageDimension;
+import georegression.fitting.se.FitSpecialEuclideanOps_F64;
+import georegression.struct.point.Point2D_F64;
+import georegression.struct.point.Point3D_F64;
+import georegression.struct.se.Se3_F64;
+import georegression.transform.se.SePointOps_F64;
+import lombok.Getter;
+import org.ddogleg.struct.DogArray_B;
+import org.ddogleg.struct.DogArray_I32;
+import org.ddogleg.struct.VerbosePrint;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * <p>
+ * Given a sequence of observations from a stereo camera compute the intrinsic calibration
+ * of each camera and the extrinsic calibration between the two cameras. A Planar calibration
+ * grid is used, which must be completely visible in all images.
+ * </p>
+ *
+ * <p>
+ * Calibration is performed by first independently determining the intrinsic parameters of each camera as well as
+ * their extrinsic parameters relative to the calibration grid. Then the extrinsic parameters between the two cameras
+ * is found by creating two point clouds composed of the calibration points in each camera's view. Then the rigid
+ * body motion is found which transforms one point cloud into the other.
+ * </p>
+ *
+ * <p>
+ * See comments in {@link CalibrateMonoPlanar} about when the y-axis should be inverted.
+ * </p>
+ *
+ * @author Peter Abeles
+ */
+@SuppressWarnings({"NullAway.Init"})
+public class CalibrateStereoPlanar implements VerbosePrint {
+
+	// transform from world to camera in each view
+	List<Se3_F64> viewLeft = new ArrayList<>();
+	List<Se3_F64> viewRight = new ArrayList<>();
+
+	// Which calibration target was observed in this view
+	DogArray_I32 viewTarget = new DogArray_I32();
+
+	// calibrates the left and right camera image
+	@Getter CalibrateMonoPlanar calibLeft = new CalibrateMonoPlanar();
+	@Getter CalibrateMonoPlanar calibRight = new CalibrateMonoPlanar();
+
+	List<List<Point2D_F64>> layouts;
+
+	MetricBundleAdjustmentUtils bundleUtils = new MetricBundleAdjustmentUtils(null, false);
+
+	@Nullable PrintStream verbose;
+
+	/**
+	 * Configures stereo calibration
+	 *
+	 * @param layouts How calibration points are laid out on each of the targets
+	 */
+	public CalibrateStereoPlanar( List<List<Point2D_F64>> layouts ) {
+		this.layouts = layouts;
+	}
+
+	/**
+	 * Puts the class into its initial state.
+	 *
+	 * @param left Shape of images from left camera
+	 * @param right Shape of images from left camera
+	 */
+	public void initialize( ImageDimension left, ImageDimension right ) {
+		viewLeft.clear();
+		viewRight.clear();
+		viewTarget.reset();
+		calibLeft.initialize(left.width, left.height, layouts);
+		calibRight.initialize(right.width, right.height, layouts);
+	}
+
+	/**
+	 * Specify calibration assumptions.
+	 */
+	public void configure(@Nullable ConfigCalibrateBrown config ) {
+		calibLeft.configurePinhole(config);
+		calibRight.configurePinhole(config);
+	}
+
+	/**
+	 * Adds a pair of images that observed the same target.
+	 *
+	 * @param targetID The calibration target being observed
+	 * @param left Image of left target.
+	 * @param right Image of right target.
+	 */
+	public void addPair( int targetID,
+						 List<PointIndex2D_F64> left,
+						 List<PointIndex2D_F64> right ) {
+		viewTarget.add(targetID);
+		calibLeft.addImage(new CalibrationObservation(targetID, left));
+		calibRight.addImage(new CalibrationObservation(targetID, right));
+	}
+
+	/**
+	 * Compute stereo calibration parameters
+	 *
+	 * @return Stereo calibration parameters
+	 */
+	public StereoParameters process() {
+		// calibrate left and right cameras
+		if (verbose != null) verbose.println("Mono Left");
+		CameraPinholeBrown leftParam = calibrateMono(calibLeft, viewLeft);
+		if (verbose != null) verbose.println("Mono right");
+		CameraPinholeBrown rightParam = calibrateMono(calibRight, viewRight);
+
+		// fit motion from right to left
+		Se3_F64 rightToLeft = computeRightToLeft();
+
+		var results = new StereoParameters(leftParam, rightParam, rightToLeft);
+		refineAll(results);
+		return results;
+	}
+
+	/**
+	 * Compute intrinsic calibration for one of the cameras
+	 */
+	private CameraPinholeBrown calibrateMono( CalibrateMonoPlanar calib, List<Se3_F64> location ) {
+		calib.setVerbose(verbose, null);
+		CameraPinholeBrown intrinsic = calib.process();
+
+		SceneStructureMetric structure = calib.getStructure();
+
+		for (int i = 0; i < structure.motions.size; i++) {
+			location.add(structure.motions.data[i].parent_to_view);
+		}
+
+		return intrinsic;
+	}
+
+	/**
+	 * Creates two 3D point clouds for the left and right camera using the known calibration points and camera
+	 * calibration. Then find the optimal rigid body transform going from the right to left views.
+	 *
+	 * @return Transform from right to left view.
+	 */
+	private Se3_F64 computeRightToLeft() {
+		// location of points in the world coordinate system
+		List<List<Point3D_F64>> listPoints3D = new ArrayList<>();
+
+		for (int targetID = 0; targetID < layouts.size(); targetID++) {
+			var points3D = new ArrayList<Point3D_F64>();
+			for (Point2D_F64 p : layouts.get(targetID)) { // lint:forbidden ignore_line
+				points3D.add(new Point3D_F64(p.x, p.y, 0));
+			}
+			listPoints3D.add(points3D);
+		}
+
+		// create point cloud in each view
+		List<Point3D_F64> left = new ArrayList<>();
+		List<Point3D_F64> right = new ArrayList<>();
+
+		for (int i = 0; i < viewLeft.size(); i++) {
+			Se3_F64 worldToLeft = viewLeft.get(i);
+			Se3_F64 worldToRight = viewRight.get(i);
+			List<Point3D_F64> points3D = listPoints3D.get(viewTarget.get(i));
+
+			// These points can really be arbitrary and don't have to be target points
+			for (Point3D_F64 p : points3D) { // lint:forbidden ignore_line
+				Point3D_F64 l = SePointOps_F64.transform(worldToLeft, p, null);
+				Point3D_F64 r = SePointOps_F64.transform(worldToRight, p, null);
+
+				left.add(l);
+				right.add(r);
+			}
+		}
+
+		// find the transform from right to left cameras
+		return FitSpecialEuclideanOps_F64.fitPoints3D(right, left);
+	}
+
+	/**
+	 * Jointly refines both cameras together
+	 *
+	 * @param parameters (input) initial estimate and is updated if refine is successful
+	 */
+	private void refineAll( StereoParameters parameters ) {
+
+		Se3_F64 left_to_right = parameters.right_to_left.invert(null);
+
+		final SceneStructureMetric structure = bundleUtils.getStructure();
+		final SceneObservations observations = bundleUtils.getObservations();
+
+		final SceneStructureMetric structureLeft = calibLeft.getStructure();
+		final SceneStructureMetric structureRight = calibRight.getStructure();
+
+		int numViews = structureLeft.views.size;
+
+		// left and right cameras. n views, and 1 known calibration target
+		structure.initialize(2, numViews*2, numViews + 1, 0, layouts.size());
+
+		// initialize the cameras
+		structure.setCamera(0, false, structureLeft.cameras.get(0).model);
+		structure.setCamera(1, false, structureRight.cameras.get(0).model);
+
+		// Specify the structure of calibration targets
+		for (int layoutID = 0; layoutID < layouts.size(); layoutID++) {
+			List<Point2D_F64> layout = layouts.get(layoutID);
+
+			// All the calibration targets are at the origin, the cameras pivots around them
+			structure.setRigid(layoutID, true, new Se3_F64(), layout.size());
+
+			// Where the points are on the calibration target
+			SceneStructureMetric.Rigid srigid = structure.rigids.data[layoutID];
+			for (int i = 0; i < layout.size(); i++) {
+				srigid.setPoint(i, layout.get(i).x, layout.get(i).y, 0);
+			}
+		}
+		structure.assignIDsToRigidPoints();
+
+		// initialize the views. Right views will be relative to left and will share the same baseline
+		int left_to_right_idx = structure.addMotion(false, left_to_right);
+		for (int viewIndex = 0; viewIndex < numViews; viewIndex++) {
+			int world_to_left_idx = structure.addMotion(false, structureLeft.motions.get(viewIndex).parent_to_view);
+			structure.setView(viewIndex*2, 0, world_to_left_idx, -1);
+			structure.setView(viewIndex*2 + 1, 1, left_to_right_idx, viewIndex*2);
+		}
+
+		// Add observations for left and right camera
+		observations.initialize(structure.views.size, true);
+		for (int viewIndex = 0; viewIndex < numViews; viewIndex++) {
+			CalibrationObservation left = calibLeft.observations.get(viewIndex);
+
+			SceneStructureMetric.Rigid srigid = structure.rigids.data[left.target];
+
+			for (int j = 0; j < left.size(); j++) {
+				PointIndex2D_F64 p = left.get(j);
+				srigid.connectPointToView(p.index, viewIndex*2, (float)p.p.x, (float)p.p.y, observations);
+			}
+		}
+		for (int viewIndex = 0; viewIndex < numViews; viewIndex++) {
+			CalibrationObservation right = calibRight.observations.get(viewIndex);
+
+			SceneStructureMetric.Rigid srigid = structure.rigids.data[right.target];
+
+			for (int j = 0; j < right.size(); j++) {
+				PointIndex2D_F64 p = right.get(j);
+				srigid.connectPointToView(p.index, viewIndex*2 + 1, (float)p.p.x, (float)p.p.y, observations);
+			}
+		}
+
+		if (verbose != null) verbose.println("Joint bundle adjustment");
+		if (!bundleUtils.process()) {
+			if (verbose != null) verbose.println("Bundle adjustment failed");
+			return;
+		}
+
+		// save the output
+		structure.motions.get(left_to_right_idx).parent_to_view.invert(parameters.right_to_left);
+		BundleAdjustmentOps.convert(((BundlePinholeBrown)structure.cameras.get(0).model),
+				parameters.left.width, parameters.left.height, parameters.left);
+		BundleAdjustmentOps.convert(((BundlePinholeBrown)structure.cameras.get(1).model),
+				parameters.left.width, parameters.left.height, parameters.right);
+	}
+
+	/**
+	 * Prints statistics based on image residuals
+	 */
+	public String computeQualityText( List<String> namesLeft ) {
+		var fillScorer = new ScoreCalibrationFill();
+		var qualityLeft = new CalibrationQuality();
+		var qualityRight = new CalibrationQuality();
+
+		CalibrateMonoPlanar.computeQuality(getCalibLeft().getIntrinsic(), fillScorer, layouts,
+				getCalibLeft().getObservations(), qualityLeft);
+		CalibrateMonoPlanar.computeQuality(getCalibRight().getIntrinsic(), fillScorer, layouts,
+				getCalibRight().getObservations(), qualityRight);
+
+		List<ImageResults> errors = computeErrors();
+
+		return computeQualityText(namesLeft, null, errors, qualityLeft, qualityRight);
+	}
+
+	/** Creates human-readable text with metrics that indicate calibration quality */
+	public static String computeQualityText( List<String> namesLeft,
+											 @Nullable DogArray_B used,
+											 List<ImageResults> errors,
+											 CalibrationQuality qualityLeft,
+											 CalibrationQuality qualityRight ) {
+		// Determine the longest name to make formatting nice
+		int nameLength = 0;
+		for (int imageIdx = 0; imageIdx < namesLeft.size(); imageIdx++) {
+			if (used != null && !used.get(imageIdx))
+				continue;
+			nameLength = Math.max(nameLength, namesLeft.get(imageIdx).length());
+		}
+		nameLength += 1;
+
+		double averageError = 0.0;
+		double maxError = 0.0;
+		for (int i = 0; i < errors.size(); i++) {
+			ImageResults r = errors.get(i);
+			averageError += r.meanError;
+			maxError = Math.max(maxError, r.maxError);
+		}
+		averageError /= errors.size();
+		String text = "";
+		text += "Metrics             left right \n";
+		text += String.format("quality.fill_border %3.0f%% %3.0f%%\n", 100*qualityLeft.borderFill,
+				100*qualityRight.borderFill);
+		text += String.format("quality.fill_inner  %3.0f%% %3.0f%%\n", 100*qualityLeft.innerFill,
+				100*qualityRight.innerFill);
+		text += String.format("quality.geometric   %3.0f%% %3.0f%%\n", 100*qualityLeft.geometric,
+				100*qualityRight.geometric);
+		text += "\n";
+		text += String.format("Reprojection Errors (px):\nmean=%.3f max=%.3f\n\n", averageError, maxError);
+		text += String.format("%-"+nameLength+"s | %8s\n", "image", "max (px)");
+
+		String format = "%-"+nameLength+"s %8.3f\n";
+
+		for (int imageIdx = 0, i = 0; imageIdx < namesLeft.size(); imageIdx++) {
+			if (used != null && !used.get(imageIdx))
+				continue;
+			String imageName = namesLeft.get(imageIdx);
+			ImageResults r = errors.get(i);
+			text += String.format(format, imageName, r.maxError);
+			// print right image now
+			r = errors.get(i + 1);
+			text += String.format(format, "", r.maxError);
+			i += 2;
+		}
+
+		return text;
+	}
+
+	public List<ImageResults> computeErrors() {
+		final SceneStructureMetric structure = bundleUtils.getStructure();
+		final SceneObservations observations = bundleUtils.getObservations();
+		List<ImageResults> errors = new ArrayList<>();
+
+		var parameters = new double[structure.getParameterCount()];
+		var residuals = new double[observations.getObservationCount()*2];
+		var codec = new CodecSceneStructureMetric();
+		codec.encode(structure, parameters);
+
+		var function = new BundleAdjustmentMetricResidualFunction();
+		function.configure(structure, observations);
+		function.process(parameters, residuals);
+
+		int idx = 0;
+		for (int i = 0; i < observations.viewsRigid.size; i++) {
+			SceneObservations.View v = observations.viewsRigid.data[i];
+			ImageResults r = new ImageResults(v.size());
+
+			double sumX = 0;
+			double sumY = 0;
+			double meanErrorMag = 0;
+			double maxError = 0;
+
+			for (int j = 0; j < v.size(); j++) {
+				double x = residuals[idx++];
+				double y = residuals[idx++];
+				double nerr = r.pointError[j] = Math.sqrt(x*x + y*y);
+
+				meanErrorMag += nerr;
+				maxError = Math.max(maxError, nerr);
+
+				sumX += x;
+				sumY += y;
+			}
+
+			r.biasX = sumX/v.size();
+			r.biasY = sumY/v.size();
+			r.meanError = meanErrorMag/v.size();
+			r.maxError = maxError;
+
+			errors.add(r);
+		}
+
+		return errors;
+	}
+
+	@Override
+	public void setVerbose( @Nullable PrintStream out, @Nullable Set<String> configuration ) {
+		this.verbose = out;
+	}
+}

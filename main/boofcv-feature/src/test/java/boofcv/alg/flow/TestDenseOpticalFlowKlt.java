@@ -1,0 +1,142 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.flow;
+
+import boofcv.abst.filter.derivative.ImageGradient;
+import boofcv.alg.misc.ImageMiscOps;
+import boofcv.alg.tracker.klt.ConfigPKlt;
+import boofcv.alg.tracker.klt.PyramidKltTracker;
+import boofcv.alg.transform.pyramid.PyramidOps;
+import boofcv.factory.filter.derivative.FactoryDerivative;
+import boofcv.factory.tracker.FactoryTrackerAlg;
+import boofcv.factory.transform.pyramid.FactoryPyramid;
+import boofcv.struct.image.GrayF32;
+import boofcv.struct.image.ImageType;
+import boofcv.struct.image.InterleavedF32;
+import boofcv.struct.pyramid.ConfigDiscreteLevels;
+import boofcv.struct.pyramid.ImagePyramid;
+import boofcv.testing.BoofStandardJUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class TestDenseOpticalFlowKlt extends BoofStandardJUnit {
+
+	GrayF32 image0 = new GrayF32(30, 40);
+	GrayF32 image1 = new GrayF32(30, 40);
+
+	ImagePyramid<GrayF32> prev;
+	GrayF32[] prevDerivX;
+	GrayF32[] prevDerivY;
+	ImagePyramid<GrayF32> curr;
+
+	ImageGradient<GrayF32, GrayF32> gradient = FactoryDerivative.sobel(GrayF32.class, GrayF32.class);
+
+	ConfigPKlt config = new ConfigPKlt();
+
+	@BeforeEach
+	void setup() {
+		config.pyramidLevels = ConfigDiscreteLevels.levels(2);
+		config.config.maxPerPixelError = 15;
+
+		prev = FactoryPyramid.discreteGaussian(config.pyramidLevels, -1, 2, true, ImageType.single(GrayF32.class));
+		curr = FactoryPyramid.discreteGaussian(config.pyramidLevels, -1, 2, true, ImageType.single(GrayF32.class));
+
+		prev.process(image0);
+		curr.process(image0);
+
+		prevDerivX = PyramidOps.declareOutput(prev, ImageType.SB_F32);
+		prevDerivY = PyramidOps.declareOutput(prev, ImageType.SB_F32);
+	}
+
+	private void processInputImage() {
+		prev.process(image0);
+		curr.process(image1);
+
+		PyramidOps.gradient(prev, gradient, prevDerivX, prevDerivY);
+	}
+
+	protected DenseOpticalFlowKlt<GrayF32, GrayF32> createAlg() {
+		PyramidKltTracker<GrayF32, GrayF32> tracker =
+				FactoryTrackerAlg.kltPyramid(config.config, GrayF32.class, GrayF32.class);
+		return new DenseOpticalFlowKlt<>(tracker, 3);
+	}
+
+	/**
+	 * Very simple positive case
+	 */
+	@Test void positive() {
+		ImageMiscOps.fillRectangle(image0, 50, 10, 12, 2, 2);
+		ImageMiscOps.fillRectangle(image1, 50, 11, 13, 2, 2);
+
+		processInputImage();
+
+		DenseOpticalFlowKlt<GrayF32, GrayF32> alg = createAlg();
+
+		InterleavedF32 flow = new InterleavedF32(image0.width, image0.height, 2);
+
+		alg.process(prev, prevDerivX, prevDerivY, gradient.divisor(), curr, flow);
+
+		// no texture in the image so KLT can't do anything
+		check(flow, 0, 0, false, 0, 0);
+		check(flow, 29, 39, false, 0, 0);
+		// there is texture at the target
+		check(flow, 10, 12, true, 1, 1);
+		check(flow, 11, 12, true, 1, 1);
+		check(flow, 10, 13, true, 1, 1);
+		check(flow, 11, 13, true, 1, 1);
+	}
+
+	private void check( InterleavedF32 flow, int px, int py, boolean valid, float x, float y ) {
+		float fx = flow.getBand(px, py, 0);
+		assertEquals(valid, !Float.isNaN(fx));
+		if (valid) {
+			assertEquals(x, fx, 0.05f);
+			assertEquals(y, flow.getBand(px, py, 1), 0.05f);
+		}
+	}
+
+	/**
+	 * Very simple negative case. The second image is blank so it should fail at tracking
+	 */
+	@Test void negative() {
+
+		ImageMiscOps.fillRectangle(image0, 200, 7, 9, 5, 5);
+
+		processInputImage();
+
+		DenseOpticalFlowKlt<GrayF32, GrayF32> alg = createAlg();
+
+		InterleavedF32 flow = new InterleavedF32(image0.width, image0.height, 2);
+
+		alg.process(prev, prevDerivX, prevDerivY, gradient.divisor(), curr, flow);
+
+		int N = flow.width*flow.height;
+		int totalFail = 0;
+		for (int i = 0; i < N; i++) {
+			if (Float.isNaN(flow.data[i*2])) {
+				totalFail++;
+			}
+		}
+
+		assertTrue(totalFail/(double)N >= 0.90);
+	}
+}

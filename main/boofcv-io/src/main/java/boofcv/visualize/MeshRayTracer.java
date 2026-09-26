@@ -1,0 +1,631 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.visualize;
+
+import boofcv.concurrency.BoofConcurrency;
+import boofcv.struct.distort.Point2Transform3_F64;
+import boofcv.struct.distort.Point3Transform2_F64;
+import boofcv.struct.image.InterleavedU8;
+import boofcv.struct.mesh.VertexMesh;
+import georegression.struct.point.Point2D_F32;
+import georegression.struct.point.Point3D_F64;
+import georegression.struct.point.Vector3D_F32;
+import georegression.struct.point.Vector3D_F64;
+import georegression.struct.se.Se3_F64;
+import georegression.struct.tuples.GeoTuple3D_F32;
+import georegression.struct.tuples.GeoTuple3D_F64;
+import org.jetbrains.annotations.Nullable;
+
+/// Supports any camera model because it uses ray-tracing.
+///
+/// - [#depthImage] is actually a range image. Each pixel is Euclidean distance from camera center to the surface
+///   along that pixel's ray. Pixels with no intersection are set to NaN.
+@SuppressWarnings("NullAway")
+public class MeshRayTracer extends MeshRender {
+	//------------------------------------------------------------------------------- Camera (rays)
+	// Per-pixel unit pointing vectors in the CAMERA frame. Length = width*height. fnorm = 1.0
+	private double[] dirCamX = new double[0];
+	private double[] dirCamY = new double[0];
+	private double[] dirCamZ = new double[0];
+	private int width, height;
+
+	//---------------------------------------------------------------------------------- Mesh / BVH
+	// Bounding Volume Hierarchy (BVH)
+	// Triangle geometry, indexed the way the source mesh stores it: a shared vertex pool plus three
+	// indices per triangle. A vertex belongs to several triangles at once -- six on a typical closed
+	// mesh -- so expanding the corners per triangle would write the same coordinates out that many
+	// times. The edges e1=v1-v0 and e2=v2-v0 are formed where they are used instead.
+	// Vertices are interleaved xyz, so vert[3*i], vert[3*i+1], vert[3*i+2].
+	// Triangle index == face index in the source VertexMesh (input is required to be triangles),
+	// so no triangle->face side table is needed.
+	private double[] vert;
+	private int[] triVert;
+	private int numTri;
+
+	// Per-triangle texture coordinates (corner 0,1,2), only allocated when the mesh is textured.
+	// Parallel to the triangle arrays, so indexed by triangle (== face) index.
+	private boolean meshTextured;
+	private float[] tex0U, tex0V, tex1U, tex1V, tex2U, tex2V;
+
+	// Texture image, sampled with bilinear interpolation. Assumed 3-band RGB.
+	private @Nullable InterleavedU8 textureImage = null;
+
+	// Flattened BVH. An internal node has count==0 and its two children live at
+	// [leftFirst, leftFirst+1]. A leaf has count>0 and owns triIdx[leftFirst .. leftFirst+count).
+	private double[] bMinX, bMinY, bMinZ, bMaxX, bMaxY, bMaxZ;
+	private int[] bLeftFirst, bCount;
+	private int[] triIdx;            // permuted triangle ordering referenced by leaves
+	private int nodesUsed;
+	private static final int LEAF_SIZE = 4;
+
+	//--------------------------------------------------------------------------------- Current pose
+	// Camera center in world coordinates and the rotation that takes a camera-frame direction to
+	// world (= R^T where worldToView.R is world->view). Cached after render() for pixelTo3D().
+	private final Point3D_F64 camCenter = new Point3D_F64();
+	private double r00, r01, r02, r10, r11, r12, r20, r21, r22; // worldToView.R, row-major
+	private final Se3_F64 worldToView = new Se3_F64();
+
+	//------------------------------------------------------------------------------------ Tuning
+	private static final double EPS_DET = 1e-12;  // reject near-degenerate det (grazing rays)
+	private static final double EPS_T = 1e-9;     // reject hits at/behind the origin
+	private static final int STACK_SIZE = 64;     // BVH depth bound; median split stays ~log2(N)
+
+	@Override public void setCamera( Point2Transform3_F64 pixelToPointing,
+	                                 Point3Transform2_F64 pointingToPixel, int width, int height ) {
+		allocateRays(width, height);
+		var p = new Point3D_F64();
+		int i = 0;
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++, i++) {
+				pixelToPointing.compute(x, y, p);
+				store(i, p.x, p.y, p.z);
+			}
+		}
+	}
+
+	private void allocateRays( int width, int height ) {
+		this.width = width;
+		this.height = height;
+		int n = width*height;
+		if (dirCamX.length < n) {
+			dirCamX = new double[n];
+			dirCamY = new double[n];
+			dirCamZ = new double[n];
+		}
+	}
+
+	// Normalize defensively; a model may return a non-unit vector. Unit length keeps t == range.
+	private void store( int i, double x, double y, double z ) {
+		double norm = Math.sqrt(x*x + y*y + z*z);
+		if (norm == 0) norm = 1;
+		dirCamX[i] = x/norm;
+		dirCamY[i] = y/norm;
+		dirCamZ[i] = z/norm;
+	}
+
+	@Override public void setTextureImage( InterleavedU8 textureImage ) {
+		this.textureImage = textureImage;
+	}
+
+	@Override public Se3_F64 getWorldToView( @Nullable Se3_F64 output ) {
+		if (output == null)
+			output = new Se3_F64();
+		output.setTo(worldToView);
+		return output;
+	}
+
+	@Override public void setWorldToView( Se3_F64 worldToView ) {
+		this.worldToView.setTo(worldToView);
+	}
+
+	// =====================================================================================
+	//  Mesh ingest + BVH build  (heavy, camera-independent precompute)
+	// =====================================================================================
+
+	/// Verifies the mesh is triangulated, copies its vertex pool and triangle indices into the
+	/// internal layout, and builds the BVH. This is the heavy, camera-independent precompute; do it
+	/// once per mesh. Triangulate beforehand with [VertexMesh#toTriangles()].
+	///
+	/// @throws IllegalArgumentException if any face is not a triangle.
+	@Override public void setMesh( VertexMesh mesh ) {
+		numTri = mesh.size();
+		int numVertex = mesh.vertexes.size();
+		allocateTriangles(numTri, numVertex);
+
+		// One copy of the shared vertex pool, flattened out of its chunked storage so the hot loop
+		// reads a plain array
+		var vtmp = new Point3D_F64();
+		for (int i = 0; i < numVertex; i++) {
+			mesh.vertexes.getCopy(i, vtmp);
+			vert[i*3] = vtmp.x;
+			vert[i*3 + 1] = vtmp.y;
+			vert[i*3 + 2] = vtmp.z;
+		}
+
+		// Precompute texture coordinates per triangle only if the mesh carries them.
+		meshTextured = mesh.isTextured();
+		if (meshTextured)
+			allocateTexCoords(numTri);
+		else
+			freeTexCoords();
+
+		// Faces are exactly 3 corners, so triangle f owns corners [3f, 3f+3) and triangle index == f.
+		// Keep every triangle (including any degenerate ones) so this identity holds; degenerate
+		// triangles are harmless and get rejected at trace time by EPS_DET.
+		var tc = new Point2D_F32();
+		for (int f = 0; f < numTri; f++) {
+			int c = mesh.faceOffsets.get(f); // first corner of this face
+			if (mesh.faceOffsets.get(f + 1) - c != 3)
+				throw new IllegalArgumentException("All faces must be triangles. Call mesh.toTriangles() first.");
+
+			triVert[f*3] = vertexIndex(mesh, c);
+			triVert[f*3 + 1] = vertexIndex(mesh, c + 1);
+			triVert[f*3 + 2] = vertexIndex(mesh, c + 2);
+
+			if (meshTextured) {
+				// Texture corners are ordered the same as vertex corners (v0, v1=v0+e1, v2=v0+e2),
+				// so the barycentric weights from the intersection apply directly.
+				mesh.texture.getCopy(texIndex(mesh, c), tc);
+				tex0U[f] = tc.x;
+				tex0V[f] = tc.y;
+				mesh.texture.getCopy(texIndex(mesh, c + 1), tc);
+				tex1U[f] = tc.x;
+				tex1V[f] = tc.y;
+				mesh.texture.getCopy(texIndex(mesh, c + 2), tc);
+				tex2U[f] = tc.x;
+				tex2V[f] = tc.y;
+			}
+		}
+
+		buildBvh();
+	}
+
+	// Resolves a corner to its vertex-pool index, honoring the implicit (empty faceVertexes) mode.
+	private static int vertexIndex( VertexMesh mesh, int corner ) {
+		return mesh.faceVertexes.isEmpty() ? corner : mesh.faceVertexes.get(corner);
+	}
+
+	// Resolves a corner to its texture-pool index, honoring the implicit (empty faceVertexTextures)
+	// "parallel" mode where the texture coordinate sits at the corner's own position.
+	private static int texIndex( VertexMesh mesh, int corner ) {
+		return mesh.faceVertexTextures.isEmpty() ? corner : mesh.faceVertexTextures.get(corner);
+	}
+
+	private void allocateTriangles( int n, int numVertex ) {
+		// Interleaving xyz makes the pool the first thing to overflow an int index, so the limit is
+		// stated here rather than surfacing as a NegativeArraySizeException
+		if (numVertex > Integer.MAX_VALUE/3)
+			throw new IllegalArgumentException("Too many vertexes to index: " + numVertex);
+		vert = new double[numVertex*3];
+		triVert = new int[n*3];
+		triIdx = new int[n];
+		for (int i = 0; i < n; i++) triIdx[i] = i;
+
+		// A node is split only when it holds more than LEAF_SIZE triangles, so a split always sees
+		// at least LEAF_SIZE+1 and hands its children at least (LEAF_SIZE+1)/2 >= 2 each. Every leaf
+		// therefore holds >= 2 triangles, giving at most n/2 leaves and, for a full binary tree,
+		// at most n-1 nodes. Allocating 2n assumed one triangle per leaf and doubled the BVH.
+		int maxNodes = Math.max(1, n);
+		bMinX = new double[maxNodes];
+		bMinY = new double[maxNodes];
+		bMinZ = new double[maxNodes];
+		bMaxX = new double[maxNodes];
+		bMaxY = new double[maxNodes];
+		bMaxZ = new double[maxNodes];
+		bLeftFirst = new int[maxNodes];
+		bCount = new int[maxNodes];
+	}
+
+	private void allocateTexCoords( int n ) {
+		tex0U = new float[n];
+		tex0V = new float[n];
+		tex1U = new float[n];
+		tex1V = new float[n];
+		tex2U = new float[n];
+		tex2V = new float[n];
+	}
+
+	private void freeTexCoords() {
+		tex0U = tex0V = tex1U = tex1V = tex2U = tex2V = null;
+	}
+
+	private void buildBvh() {
+		if (numTri == 0) {
+			nodesUsed = 0;
+			return;
+		}
+		nodesUsed = 1;          // root is node 0; children allocated contiguously from 1
+		bLeftFirst[0] = 0;
+		bCount[0] = numTri;
+		subdivide(0);
+	}
+
+	private void subdivide( int node ) {
+		int first = bLeftFirst[node];
+		int count = bCount[node];
+		computeNodeBounds(node, first, count);
+
+		if (count <= LEAF_SIZE) return; // leaf: leftFirst/count already correct
+
+		// Split axis = widest extent of the node AABB.
+		double ex = bMaxX[node] - bMinX[node];
+		double ey = bMaxY[node] - bMinY[node];
+		double ez = bMaxZ[node] - bMinZ[node];
+		int axis = (ex >= ey && ex >= ez) ? 0 : (ey >= ez ? 1 : 2);
+
+		// Object-median split via quickselect on the centroid along the chosen axis. This keeps the
+		// tree balanced (depth ~log2 N) and never produces an empty side.
+		int mid = first + count/2;
+		quickselect(first, first + count - 1, mid, axis);
+		int leftCount = mid - first;
+
+		int left = nodesUsed++;
+		int right = nodesUsed++;
+		bLeftFirst[left] = first;
+		bCount[left] = leftCount;
+		bLeftFirst[right] = mid;
+		bCount[right] = count - leftCount;
+		bLeftFirst[node] = left;
+		bCount[node] = 0; // mark internal
+
+		subdivide(left);
+		subdivide(right);
+	}
+
+	private void computeNodeBounds( int node, int first, int count ) {
+		double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
+		double maxX = Double.NEGATIVE_INFINITY, maxY = maxX, maxZ = maxX;
+		for (int i = 0; i < count; i++) {
+			int tri = triIdx[first + i];
+			int i0 = triVert[tri*3]*3, i1 = triVert[tri*3 + 1]*3, i2 = triVert[tri*3 + 2]*3;
+			double ax = vert[i0], ay = vert[i0 + 1], az = vert[i0 + 2];
+			double bx = vert[i1], by = vert[i1 + 1], bz = vert[i1 + 2];
+			double cx = vert[i2], cy = vert[i2 + 1], cz = vert[i2 + 2];
+			minX = min3(minX, ax, bx, cx);
+			maxX = max3(maxX, ax, bx, cx);
+			minY = min3(minY, ay, by, cy);
+			maxY = max3(maxY, ay, by, cy);
+			minZ = min3(minZ, az, bz, cz);
+			maxZ = max3(maxZ, az, bz, cz);
+		}
+		bMinX[node] = minX;
+		bMinY[node] = minY;
+		bMinZ[node] = minZ;
+		bMaxX[node] = maxX;
+		bMaxY[node] = maxY;
+		bMaxZ[node] = maxZ;
+	}
+
+	// Hoare-style quickselect: partition triIdx[lo..hi] so position k holds its sorted element and
+	// everything left of k has a smaller-or-equal centroid on the given axis.
+	private void quickselect( int lo, int hi, int k, int axis ) {
+		while (lo < hi) {
+			double pivot = centroid(triIdx[(lo + hi) >>> 1], axis);
+			int i = lo, j = hi;
+			while (i <= j) {
+				while (centroid(triIdx[i], axis) < pivot) i++;
+				while (centroid(triIdx[j], axis) > pivot) j--;
+				if (i <= j) {
+					int tmp = triIdx[i];
+					triIdx[i] = triIdx[j];
+					triIdx[j] = tmp;
+					i++;
+					j--;
+				}
+			}
+			if (k <= j) hi = j;
+			else if (k >= i) lo = i;
+			else break;
+		}
+	}
+
+	private double centroid( int tri, int axis ) {
+		// Derived rather than stored. Keeping three double[numTri] arrays for a value used only to
+		// order triangles during construction costs 24 bytes per triangle at peak, which on a
+		// multi-million triangle mesh is hundreds of MB.
+		int i0 = triVert[tri*3]*3 + axis, i1 = triVert[tri*3 + 1]*3 + axis, i2 = triVert[tri*3 + 2]*3 + axis;
+		return (vert[i0] + vert[i1] + vert[i2])/3.0;
+	}
+
+	@Override public void render() {
+		if (numTri == 0) throw new IllegalStateException("Mesh not set");
+		if (width <= 0 || height <= 0) throw new IllegalStateException("Camera not set");
+
+		depthImage.reshape(width, height);
+		renderedImage.reshape(width, height);
+
+		// Decide once whether to texture map or fall back to the per-face colorizer. Mirrors
+		// RenderMesh: use the colorizer if forced, if the mesh has no texture coordinates, or if no
+		// texture image was supplied.
+		final boolean useColorizer = forceColorizer || !meshTextured || textureImage == null;
+
+		// Camera center in world: the point that maps to the view origin.
+		worldToView.transformReverse(new Point3D_F64(0, 0, 0), camCenter);
+
+		// Cache R (world->view). World direction of a camera-frame ray is R^T * dirCam.
+		double[] R = worldToView.R.data;
+		r00 = R[0];
+		r01 = R[1];
+		r02 = R[2];
+		r10 = R[3];
+		r11 = R[4];
+		r12 = R[5];
+		r20 = R[6];
+		r21 = R[7];
+		r22 = R[8];
+		// DMatrix3x3; // <-- use this instead of manual r00/ Also consider switching to using Point3D_F64 and
+		// coding up y = R*x and y = R'*x  instead of hand rolling it multiple locations
+
+		final double ox = camCenter.x, oy = camCenter.y, oz = camCenter.z;
+
+		BoofConcurrency.loopFor(0, height, y -> {
+			int[] stack = new int[STACK_SIZE];
+			Hit hit = new Hit();
+			int row = y*width;
+			for (int x = 0; x < width; x++) {
+				int pix = row + x;
+				double dcx = dirCamX[pix], dcy = dirCamY[pix], dcz = dirCamZ[pix];
+
+				// R^T * dcam  (rotation is isometric, so the world direction stays unit -> t is range)
+				double dx = r00*dcx + r10*dcy + r20*dcz;
+				double dy = r01*dcx + r11*dcy + r21*dcz;
+				double dz = r02*dcx + r12*dcy + r22*dcz;
+
+				hit.t = Double.POSITIVE_INFINITY;
+				hit.tri = -1;
+				trace(ox, oy, oz, dx, dy, dz, stack, hit);
+
+				if (hit.tri >= 0) {
+					depthImage.unsafe_set(x, y, (float)hit.t);
+					int rgb = useColorizer
+							? surfaceColor.surfaceRgb(hit.tri)         // tri index == face index
+							: sampleTexture(hit.tri, hit.u, hit.v);
+					renderedImage.set24(x, y, rgb);
+				} else {
+					depthImage.unsafe_set(x, y, Float.NaN);
+					renderedImage.set24(x, y, defaultColorRgb);
+				}
+			}
+		});
+	}
+
+	// Closest-hit traversal. Descends the nearer child first and prunes any node whose entry
+	// distance exceeds the best hit found so far.
+	void trace( double ox, double oy, double oz,
+	            double dx, double dy, double dz,
+	            int[] stack, Hit hit ) {
+		// Avoid 0*inf NaN in the slab test by nudging exact-zero components.
+		double idx = 1.0/(dx != 0 ? dx : 1e-300);
+		double idy = 1.0/(dy != 0 ? dy : 1e-300);
+		double idz = 1.0/(dz != 0 ? dz : 1e-300);
+
+		int sp = 0;
+		stack[sp++] = 0; // root
+		while (sp > 0) {
+			int node = stack[--sp];
+			if (bCount[node] > 0) {
+				int first = bLeftFirst[node];
+				int end = first + bCount[node];
+				for (int i = first; i < end; i++)
+					intersectTri(triIdx[i], ox, oy, oz, dx, dy, dz, hit);
+				continue;
+			}
+			int left = bLeftFirst[node];
+			int right = left + 1;
+			double tL = rayBoxEntry(left, ox, oy, oz, idx, idy, idz, hit.t);
+			double tR = rayBoxEntry(right, ox, oy, oz, idx, idy, idz, hit.t);
+
+			// Push farther first so the nearer child is processed next (better pruning).
+			if (tL <= tR) {
+				if (tR != Double.POSITIVE_INFINITY) stack[sp++] = right;
+				if (tL != Double.POSITIVE_INFINITY) stack[sp++] = left;
+			} else {
+				if (tL != Double.POSITIVE_INFINITY) stack[sp++] = left;
+				if (tR != Double.POSITIVE_INFINITY) stack[sp++] = right;
+			}
+		}
+	}
+
+	// Slab test. Returns the entry distance (clamped to >=0) if the ray hits the box within [0,bestT),
+	// otherwise +inf. invD components are precomputed.
+	double rayBoxEntry( int node, double ox, double oy, double oz,
+	                    double idx, double idy, double idz, double bestT ) {
+		double t1 = (bMinX[node] - ox)*idx, t2 = (bMaxX[node] - ox)*idx;
+		double tmin = Math.min(t1, t2), tmax = Math.max(t1, t2);
+
+		t1 = (bMinY[node] - oy)*idy;
+		t2 = (bMaxY[node] - oy)*idy;
+		tmin = Math.max(tmin, Math.min(t1, t2));
+		tmax = Math.min(tmax, Math.max(t1, t2));
+
+		t1 = (bMinZ[node] - oz)*idz;
+		t2 = (bMaxZ[node] - oz)*idz;
+		tmin = Math.max(tmin, Math.min(t1, t2));
+		tmax = Math.min(tmax, Math.max(t1, t2));
+
+		if (tmax >= Math.max(tmin, 0.0) && tmin < bestT)
+			return Math.max(tmin, 0.0);
+		return Double.POSITIVE_INFINITY;
+	}
+
+	// Moller-Trumbore. Updates hit if this triangle is a closer valid intersection.
+	// Two-sided unless cullBackFaces is set.
+	void intersectTri( int tri, double ox, double oy, double oz,
+	                   double dx, double dy, double dz, Hit hit ) {
+		int i0 = triVert[tri*3]*3, i1 = triVert[tri*3 + 1]*3, i2 = triVert[tri*3 + 2]*3;
+		double v0x = vert[i0], v0y = vert[i0 + 1], v0z = vert[i0 + 2];
+		double e1x = vert[i1] - v0x, e1y = vert[i1 + 1] - v0y, e1z = vert[i1 + 2] - v0z;
+		double e2x = vert[i2] - v0x, e2y = vert[i2 + 1] - v0y, e2z = vert[i2 + 2] - v0z;
+
+		// pvec = D x e2
+		double px = dy*e2z - dz*e2y;
+		double py = dz*e2x - dx*e2z;
+		double pz = dx*e2y - dy*e2x;
+
+		double det = e1x*px + e1y*py + e1z*pz;
+		// Degenerate triangles are always rejected. When cullBackFaces is set we additionally reject
+		// back faces (det <= 0). 'cullBackFaces' is constant across the render, so this branch is
+		// fully predicted; it changes which surfaces are visible, not throughput. Which side is
+		// "front" depends on vertex winding -- meshes with inconsistent winding (e.g. disparity
+		// derived) will show holes when culled, which is why two-sided is the default.
+		if (cullBackFaces) {
+			if (det < EPS_DET) return;                   // reject back faces and degenerate
+		} else {
+			if (det > -EPS_DET && det < EPS_DET) return; // reject degenerate only
+		}
+		double invDet = 1.0/det;
+
+		// tvec = O - v0
+		double tx = ox - v0x;
+		double ty = oy - v0y;
+		double tz = oz - v0z;
+
+		double u = (tx*px + ty*py + tz*pz)*invDet;
+		if (u < 0.0 || u > 1.0) return;
+
+		// qvec = tvec x e1
+		double qx = ty*e1z - tz*e1y;
+		double qy = tz*e1x - tx*e1z;
+		double qz = tx*e1y - ty*e1x;
+
+		double vv = (dx*qx + dy*qy + dz*qz)*invDet;
+		if (vv < 0.0 || u + vv > 1.0) return;
+
+		double t = (e2x*qx + e2y*qy + e2z*qz)*invDet;
+		if (t > EPS_T && t < hit.t) {
+			hit.t = t;
+			hit.tri = tri;
+			// Barycentric weights of the hit: P = (1-u-v)*v0 + u*v1 + v*v2. Computed on the true 3D
+			// triangle, so they are already perspective-correct -- no 1/z weighting needed.
+			hit.u = u;
+			hit.v = vv;
+		}
+	}
+
+	// =====================================================================================
+	//  Texture sampling
+	// =====================================================================================
+
+	// Interpolates the hit's texture coordinate from the triangle's three corners and bilinearly
+	// samples the texture image. Reads only image data into locals, so it is safe to call from the
+	// parallel render loop. Assumes a 3-band RGB texture image.
+	int sampleTexture( int tri, double u, double v ) {
+		double w0 = 1.0 - u - v;
+		float s = (float)(w0*tex0U[tri] + u*tex1U[tri] + v*tex2U[tri]);
+		float t = (float)(w0*tex0V[tri] + u*tex1V[tri] + v*tex2V[tri]);
+
+		final InterleavedU8 img = textureImage;
+		final int W = img.width, H = img.height;
+
+		// Texture coords are fractions in [0,1]; v is flipped because image rows run top-to-bottom.
+		float px = s*(W - 1);
+		float py = (1.0f - t)*(H - 1);
+
+		// Clamp to the image (EXTENDED border behavior).
+		if (px < 0) px = 0;
+		else if (px > W - 1) px = W - 1;
+		if (py < 0) py = 0;
+		else if (py > H - 1) py = H - 1;
+
+		int x0 = (int)px, y0 = (int)py;
+		int x1 = x0 + 1 < W ? x0 + 1 : x0;
+		int y1 = y0 + 1 < H ? y0 + 1 : y0;
+		float fx = px - x0, fy = py - y0;
+
+		byte[] d = img.data;
+		int i00 = img.getIndex(x0, y0, 0);
+		int i10 = img.getIndex(x1, y0, 0);
+		int i01 = img.getIndex(x0, y1, 0);
+		int i11 = img.getIndex(x1, y1, 0);
+
+		int r = bilerp(d, i00, i10, i01, i11, 0, fx, fy);
+		int g = bilerp(d, i00, i10, i01, i11, 1, fx, fy);
+		int b = bilerp(d, i00, i10, i01, i11, 2, fx, fy);
+		return (r << 16) | (g << 8) | b;
+	}
+
+	static int bilerp( byte[] d, int i00, int i10, int i01, int i11, int band, float fx, float fy ) {
+		int v00 = d[i00 + band] & 0xFF;
+		int v10 = d[i10 + band] & 0xFF;
+		int v01 = d[i01 + band] & 0xFF;
+		int v11 = d[i11 + band] & 0xFF;
+		float top = v00 + fx*(v10 - v00);
+		float bot = v01 + fx*(v11 - v01);
+		int val = (int)(top + fy*(bot - top) + 0.5f);
+		return val < 0 ? 0 : (val > 255 ? 255 : val);
+	}
+
+	// =====================================================================================
+	//  Downstream helper
+	// =====================================================================================
+
+	/// Reconstructs the world-frame 3D point seen at a pixel using the rendered range image and the
+	/// pose from the last render(). Returns false if that pixel had no intersection. This is exact
+	/// for any FOV because it reuses the same unit ray that produced the range.
+	public boolean pixelTo3D( int x, int y, Point3D_F64 out ) {
+		float range = depthImage.unsafe_get(x, y);
+		if (Float.isNaN(range)) return false;
+		int pix = y*width + x;
+		double dcx = dirCamX[pix], dcy = dirCamY[pix], dcz = dirCamZ[pix];
+		double dx = r00*dcx + r10*dcy + r20*dcz;
+		double dy = r01*dcx + r11*dcy + r21*dcz;
+		double dz = r02*dcx + r12*dcy + r22*dcz;
+		out.x = camCenter.x + range*dx;
+		out.y = camCenter.y + range*dy;
+		out.z = camCenter.z + range*dz;
+		return true;
+	}
+
+	/// Returns the pointing vector for the given pixel. Vector has an F-Norm of 1.
+	public <T extends GeoTuple3D_F64<T>> T pixelToPointing( int x, int y, @Nullable T out ) {
+		if (out == null)
+			out = (T)new Vector3D_F64();
+		int pix = y*width + x;
+		out.setTo(dirCamX[pix], dirCamY[pix], dirCamZ[pix]);
+		return out;
+	}
+
+	/// Returns the pointing vector for the given pixel. Vector has an F-Norm of 1.
+	public <T extends GeoTuple3D_F32<T>> T pixelToPointing( int x, int y, @Nullable T out ) {
+		if (out == null)
+			out = (T)new Vector3D_F32();
+		int pix = y*width + x;
+		out.setTo((float)dirCamX[pix], (float)dirCamY[pix], (float)dirCamZ[pix]);
+		return out;
+	}
+
+	// =====================================================================================
+	//  Small helpers / types
+	// =====================================================================================
+
+	private static double min3( double a, double b, double c, double d ) {
+		return Math.min(a, Math.min(b, Math.min(c, d)));
+	}
+
+	private static double max3( double a, double b, double c, double d ) {
+		return Math.max(a, Math.max(b, Math.max(c, d)));
+	}
+
+	/// Mutable closest-hit record reused per row to avoid allocation.
+	static final class Hit {
+		double t;
+		int tri;
+		double u, v; // barycentric weights at the hit (for texture interpolation)
+	}
+}

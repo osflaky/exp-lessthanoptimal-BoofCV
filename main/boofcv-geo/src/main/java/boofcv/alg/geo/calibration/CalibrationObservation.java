@@ -1,0 +1,112 @@
+/*
+ * Copyright (c) 2023, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.geo.calibration;
+
+import boofcv.struct.geo.PointIndex2D_F64;
+import georegression.struct.point.Point2D_F64;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * List of observed features and their pixel locations on a single calibration target from one image.
+ * Partially observable calibration targets is supported by the associated index for each point.
+ *
+ * @author Peter Abeles
+ */
+public class CalibrationObservation {
+	/** Which target was observed */
+	@Getter public int target;
+
+	/**
+	 * List of pixel observations and the index of the control point
+	 */
+	@Getter public List<PointIndex2D_F64> points = new ArrayList<>();
+
+	public CalibrationObservation() {}
+
+	public CalibrationObservation( int target, List<PointIndex2D_F64> points ) {
+		this.target = target;
+		this.points.addAll(points);
+	}
+
+	public void setTo( CalibrationObservation obs ) {
+		reset();
+		this.target = obs.target;
+		for (int i = 0; i < obs.size(); i++) {
+			PointIndex2D_F64 p = obs.points.get(i);
+			points.add(p.copy());
+		}
+	}
+
+	public PointIndex2D_F64 get( int index ) {
+		return points.get(index);
+	}
+
+	/**
+	 * Adds a new observation. A copy is made.
+	 *
+	 * @param which Index of the observed feature
+	 * @param observation The observation. A copy is internally created.
+	 */
+	public void add( int which, Point2D_F64 observation ) {
+		points.add(new PointIndex2D_F64(observation.x, observation.y, which));
+	}
+
+	public void add( int which, double x, double y ) {
+		points.add(new PointIndex2D_F64(x, y, which));
+	}
+
+	public void reset() {
+		this.target = 0;
+		points.clear();
+	}
+
+	/**
+	 * Ensures the points order is in increasing order of index value
+	 */
+	public void sort() {
+		// check to see if they are already ordered first to avoid wasting CPU
+		boolean ordered = true;
+		for (int i = 1; i < points.size(); i++) {
+			if (points.get(i - 1).index >= points.get(i).index) {
+				ordered = false;
+				break;
+			}
+		}
+		if (ordered)
+			return;
+
+		// Old style sort is used for java 1.8 compatibility
+		Collections.sort(points, Comparator.comparingInt(o -> o.index));
+	}
+
+	public int size() {
+		return points.size();
+	}
+
+	public CalibrationObservation copy() {
+		CalibrationObservation c = new CalibrationObservation();
+		c.setTo(this);
+		return c;
+	}
+}

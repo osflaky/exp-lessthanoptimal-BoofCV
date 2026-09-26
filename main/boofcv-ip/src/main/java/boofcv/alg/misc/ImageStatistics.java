@@ -1,0 +1,2613 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.misc;
+
+import boofcv.alg.InputSanityCheck;
+import boofcv.alg.misc.impl.ImplImageStatistics;
+import boofcv.alg.misc.impl.ImplImageStatistics_MT;
+import boofcv.concurrency.BoofConcurrency;
+import boofcv.struct.image.*;
+
+import javax.annotation.Generated;
+
+/**
+ * Computes statistical properties of pixels inside an image.
+ *
+ * <p>DO NOT MODIFY. Automatically generated code created by GenerateImageStatistics</p>
+ */
+@Generated("boofcv.alg.misc.GenerateImageStatistics")
+public class ImageStatistics {
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( GrayU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( InterleavedU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( GrayU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( InterleavedU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( GrayU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( InterleavedU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( GrayU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( InterleavedU8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayU8 imgA, GrayU8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedU8 imgA, InterleavedU8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayU8 imgA, GrayU8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedU8 imgA, InterleavedU8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( GrayU8 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( GrayU8 input ) {
+		return sum(input);
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayU8 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( InterleavedU8 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( InterleavedU8 input ) {
+		return sum(input);
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedU8 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayU8 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayU8 input, int minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayU8 input, int minValue, int maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( GrayS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( InterleavedS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( GrayS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( InterleavedS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( GrayS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( InterleavedS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( GrayS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( InterleavedS8 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayS8 imgA, GrayS8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedS8 imgA, InterleavedS8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayS8 imgA, GrayS8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedS8 imgA, InterleavedS8 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( GrayS8 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( GrayS8 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayS8 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( InterleavedS8 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( InterleavedS8 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedS8 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayS8 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayS8 input, int minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayS8 input, int minValue, int maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( GrayU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( InterleavedU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( GrayU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( InterleavedU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( GrayU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( InterleavedU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( GrayU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbsU(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( InterleavedU16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbsU(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayU16 imgA, GrayU16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedU16 imgA, InterleavedU16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSqU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayU16 imgA, GrayU16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedU16 imgA, InterleavedU16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbsU(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( GrayU16 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( GrayU16 input ) {
+		return sum(input);
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayU16 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( InterleavedU16 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( InterleavedU16 input ) {
+		return sum(input);
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedU16 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayU16 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayU16 input, int minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayU16 input, int minValue, int maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( GrayS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( InterleavedS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( GrayS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( InterleavedS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( GrayS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( InterleavedS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( GrayS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( InterleavedS16 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayS16 imgA, GrayS16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedS16 imgA, InterleavedS16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayS16 imgA, GrayS16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedS16 imgA, InterleavedS16 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( GrayS16 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( GrayS16 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayS16 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( InterleavedS16 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( InterleavedS16 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedS16 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayS16 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayS16 input, int minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayS16 input, int minValue, int maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( GrayS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int min( InterleavedS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( GrayS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int max( InterleavedS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( GrayS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static int minAbs( InterleavedS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( GrayS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static int maxAbs( InterleavedS32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayS32 imgA, GrayS32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedS32 imgA, InterleavedS32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayS32 imgA, GrayS32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedS32 imgA, InterleavedS32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( GrayS32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( GrayS32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayS32 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sum( InterleavedS32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static int sumAbs( InterleavedS32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedS32 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayS32 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayS32 input, int minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayS32 input, int minValue, int maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static long min( GrayS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static long min( InterleavedS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static long max( GrayS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static long max( InterleavedS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static long minAbs( GrayS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static long minAbs( InterleavedS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static long maxAbs( GrayS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static long maxAbs( InterleavedS64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayS64 imgA, GrayS64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedS64 imgA, InterleavedS64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayS64 imgA, GrayS64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedS64 imgA, InterleavedS64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static long sum( GrayS64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static long sumAbs( GrayS64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayS64 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static long sum( InterleavedS64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static long sumAbs( InterleavedS64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedS64 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayS64 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayS64 input, long minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayS64 input, long minValue, long maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static float min( GrayF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static float min( InterleavedF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static float max( GrayF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static float max( InterleavedF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static float minAbs( GrayF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static float minAbs( InterleavedF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static float maxAbs( GrayF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static float maxAbs( InterleavedF32 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayF32 imgA, GrayF32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedF32 imgA, InterleavedF32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayF32 imgA, GrayF32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedF32 imgA, InterleavedF32 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static float sum( GrayF32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static float sumAbs( GrayF32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static float mean( GrayF32 img ) {
+		return sum(img)/(float)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static float sum( InterleavedF32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static float sumAbs( InterleavedF32 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static float mean( InterleavedF32 img ) {
+		return sum(img)/(float)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static float variance( GrayF32 img, float mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayF32 input, float minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayF32 input, float minValue, float maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static double min( GrayF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static double min( InterleavedF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.min(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static double max( GrayF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static double max( InterleavedF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.max(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static double minAbs( GrayF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the minimum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Minimum pixel value.
+	 */
+	public static double minAbs( InterleavedF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.minAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static double maxAbs( GrayF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width, input.stride);
+		}
+	}
+
+	/**
+	 * Returns the maximum element value.
+	 *
+	 * @param input Input image. Not modified.
+	 * @return Maximum pixel value.
+	 */
+	public static double maxAbs( InterleavedF64 input ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		} else {
+			return ImplImageStatistics.maxAbs(input.data, input.startIndex, input.height, input.width*input.numBands, input.stride);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( GrayF64 imgA, GrayF64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean squared error (MSE) between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffSq( InterleavedF64 imgA, InterleavedF64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffSq(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( GrayF64 imgA, GrayF64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width);
+		}
+	}
+
+	/**
+	 * <p>Computes the mean of absolute value error between the two images.</p>
+	 *
+	 * @param imgA first image. Not modified.
+	 * @param imgB second image. Not modified.
+	 * @return error between the two images.
+	 */
+	public static double meanDiffAbs( InterleavedF64 imgA, InterleavedF64 imgB ) {
+		InputSanityCheck.checkSameShape(imgA, imgB);
+		int N = imgA.width*imgA.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		} else {
+			return ImplImageStatistics.meanDiffAbs(imgA.data, imgA.startIndex, imgA.stride, imgB.data, imgB.startIndex, imgB.stride, imgA.height, imgA.width*imgA.numBands);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static double sum( GrayF64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static double sumAbs( GrayF64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( GrayF64 img ) {
+		return sum(img)/(double)(img.width*img.height);
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static double sum( InterleavedF64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sum(input);
+		} else {
+			return ImplImageStatistics.sum(input);
+		}
+	}
+
+	/**
+	 * <p>
+	 * Returns the sum of all the pixels in the image.
+	 * </p>
+	 *
+	 * @param img Input image. Not modified.
+	 */
+	public static double sumAbs( InterleavedF64 input ) {
+
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.sumAbs(input);
+		} else {
+			return ImplImageStatistics.sumAbs(input);
+		}
+	}
+
+	/**
+	 * Returns the mean pixel intensity value.
+	 *
+	 * @param img Input image. Not modified.
+	 * @return Mean pixel intensity value
+	 */
+	public static double mean( InterleavedF64 img ) {
+		return sum(img)/(double)(img.width*img.height*img.numBands);
+	}
+
+	/**
+	 * Computes the variance of pixel intensity values inside the image.
+	 *
+	 * @param img Input image. Not modified.
+	 * @param mean Mean pixel intensity value.
+	 * @return Pixel variance
+	 */
+	public static double variance( GrayF64 img, double mean ) {
+
+		int N = img.width*img.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			return ImplImageStatistics_MT.variance(img, mean);
+		} else {
+			return ImplImageStatistics.variance(img, mean);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogram( GrayF64 input, double minValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogram(input, minValue, histogram);
+		} else {
+			ImplImageStatistics.histogram(input, minValue, histogram);
+		}
+	}
+
+	/**
+	 * Computes the histogram of intensity values for the image while scaling the range to match the histogram.
+	 *
+	 * @param input (input) Image.
+	 * @param minValue (input) Minimum possible intensity value   
+	 * @param histogram (output) Storage for histogram. Number of elements must be equal to max value.
+	 */
+	public static void histogramScaled( GrayF64 input, double minValue, double maxValue, int[] histogram ) {
+		int N = input.width*input.height;
+		if (BoofConcurrency.USE_CONCURRENT && N >= BoofConcurrency.SMALL_IMAGE) {
+			ImplImageStatistics_MT.histogramScaled(input, minValue, maxValue, histogram);
+		} else {
+			ImplImageStatistics.histogramScaled(input, minValue, maxValue, histogram);
+		}
+	}
+
+}

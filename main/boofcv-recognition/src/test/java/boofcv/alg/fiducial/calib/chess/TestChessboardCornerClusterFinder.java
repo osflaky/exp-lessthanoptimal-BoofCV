@@ -1,0 +1,282 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.fiducial.calib.chess;
+
+import boofcv.alg.feature.detect.chess.ChessboardCorner;
+import boofcv.struct.image.GrayU8;
+import boofcv.testing.BoofStandardJUnit;
+import georegression.geometry.UtilPoint2D_F64;
+import georegression.struct.point.Point2D_F64;
+import org.ddogleg.struct.DogArray;
+import org.ejml.UtilEjml;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@SuppressWarnings("WeakerAccess")
+class TestChessboardCornerClusterFinder extends BoofStandardJUnit {
+	final double sideLength = 40; // pixel distance between corners
+	double offsetX;
+	double offsetY;
+
+	GrayU8 image = new GrayU8(1, 1);
+
+	@BeforeEach
+	void setup() {
+		offsetX = 0;
+		offsetY = 0;
+	}
+
+	/**
+	 * Perfect grids with only the exact number of expected
+	 */
+	@Test
+	void perfect_one() {
+		for (int trial = 0; trial < 10; trial++) {
+			// test various sizes in an attempt to trigger edge cases
+			perfect(2, 2);
+			perfect(4, 2);
+			perfect(3, 3);
+			// NN search won't find all the corners now
+			perfect(4, 4);
+			perfect(10, 10);
+		}
+	}
+
+	void perfect( int rows, int cols ) {
+		List<ChessboardCorner> input = createCorners(rows, cols);
+		ChessboardCornerClusterFinder<GrayU8> alg = createAlg();
+		alg.setMaxNeighbors(10); // this is perfect, 8 should be enough
+		// reduced the number so that having an non-exhaustive search is stressed more
+		alg.process(image, input, 1);
+
+		DogArray<ChessboardCornerGraph> found = alg.getOutputClusters();
+		assertEquals(1, found.size);
+		checkClusterPerfect(found.get(0), rows, cols);
+	}
+
+	/**
+	 * This contains an ambiguous corner and the algorithm needs to select the correct one
+	 */
+	@Test
+	void perfect_ambiguous() {
+		for (int i = 0; i < 10; i++) {
+			perfect_ambiguous(2, 2, 1);
+			perfect_ambiguous(5, 5, 1);
+			perfect_ambiguous(10, 8, 1);
+		}
+	}
+
+	void perfect_ambiguous( int rows, int cols, int numAmbiguous ) {
+		List<ChessboardCorner> input = createCorners(rows, cols);
+
+		// add new corners which are near by existing ones but not part of the grid
+		int N = rows*cols;
+		for (int i = 0; i < numAmbiguous; i++) {
+			ChessboardCorner c = input.get(rand.nextInt(N));
+			ChessboardCorner d = new ChessboardCorner();
+			d.setTo(c);
+			d.x += rand.nextGaussian()*sideLength/30.0;
+			d.y += rand.nextGaussian()*sideLength/30.0;
+			input.add(d);
+		}
+
+		ChessboardCornerClusterFinder<GrayU8> alg = createAlg();
+		alg.setMaxNeighbors(10); // this is perfect, 8 should be enough
+		// reduced the number so that having an non-exhaustive search is stressed more
+		alg.process(image, input, 1);
+
+		DogArray<ChessboardCornerGraph> found = alg.getOutputClusters();
+		if (numAmbiguous == 0) {
+			assertEquals(1, found.size);
+			checkClusterPerfect(found.get(0), rows, cols);
+		} else {
+			assertTrue(found.size > 0);
+			for (int i = 0; i < found.size; i++) {
+				checkClusterAmbiguous(found.get(i), rows, cols);
+			}
+		}
+	}
+
+	/**
+	 * There are two completely separate grids which are parallel to each other.
+	 */
+	@Test
+	void perfect_2x2_3x2() {
+		List<ChessboardCorner> input = createCorners(2, 2);
+		offsetX = 500;
+		input.addAll(createCorners(3, 2));
+
+		ChessboardCornerClusterFinder<GrayU8> alg = createAlg();
+		alg.setMaxNeighborDistance(200);
+		alg.process(image, input, 1);
+		DogArray<ChessboardCornerGraph> found = alg.getOutputClusters();
+
+		assertEquals(2, found.size);
+
+		boolean found2x2 = false;
+		boolean found3x2 = false;
+
+		for (int i = 0; i < found.size; i++) {
+			ChessboardCornerGraph g = found.get(i);
+			if (g.corners.size == 4)
+				found2x2 = true;
+			else if (g.corners.size == 6)
+				found3x2 = true;
+		}
+
+		assertTrue(found2x2);
+		assertTrue(found3x2);
+	}
+
+	List<ChessboardCorner> createCorners( int rows, int cols ) {
+		List<ChessboardCorner> corners = new ArrayList<>();
+
+		for (int row = 0; row < rows; row++) {
+			double y = offsetY + sideLength*row;
+			for (int col = 0; col < cols; col++) {
+				double x = offsetX + sideLength*col;
+
+				ChessboardCorner c = new ChessboardCorner();
+				c.intensity = 20;
+				c.orientation = (((row%2) + (col%2))%2) == 0 ? Math.PI/4 : -Math.PI/4;
+				c.x = x;
+				c.y = y;
+				c.contrast = 1.0;
+				c.level1 = c.level2 = c.levelMax = 0;
+
+				corners.add(c);
+			}
+		}
+
+		// randomize the list
+		Collections.shuffle(corners, rand);
+
+		return corners;
+	}
+
+	void checkClusterPerfect( ChessboardCornerGraph cluster, int rows, int cols ) {
+		assertEquals(rows*cols, cluster.corners.size);
+
+		// Checks to see there is one and only one node at each expected location
+		for (int row = 0; row < rows; row++) {
+			double y = sideLength*row;
+			for (int col = 0; col < cols; col++) {
+				double x = sideLength*col;
+
+				int numMatches = 0;
+				for (int i = 0; i < cluster.corners.size; i++) {
+					if (cluster.corners.get(i).corner.distance(x, y) < UtilEjml.TEST_F64) {
+						numMatches++;
+					}
+				}
+
+				assertEquals(1, numMatches);
+			}
+		}
+
+		// check the edges
+		for (int row = 0; row < rows; row++) {
+			double y = sideLength*row;
+			for (int col = 0; col < cols; col++) {
+				double x = sideLength*col;
+
+				int expected = 2;
+				if (row > 0 && row < rows - 1) {
+					expected++;
+				}
+				if (col > 0 && col < cols - 1) {
+					expected++;
+				}
+
+				ChessboardCornerGraph.Node n = cluster.findClosest(x, y);
+
+				assertEquals(expected, n.countEdges());
+			}
+		}
+	}
+
+	void checkClusterAmbiguous( ChessboardCornerGraph cluster, int rows, int cols ) {
+		assertEquals(rows*cols, cluster.corners.size);
+
+		// Checks to see there is one and only one node at each expected location
+		for (int i = 0; i < cluster.corners.size; i++) {
+			Point2D_F64 a = cluster.corners.get(i).corner;
+
+			int matches = 0;
+			for (int j = i + 1; j < cluster.corners.size; j++) {
+				Point2D_F64 b = cluster.corners.get(j).corner;
+
+				if (a.distance(b) < 0.0001) {
+					matches++;
+				}
+			}
+
+			assertEquals(0, matches);
+		}
+
+		// check the edges
+		for (int row = 0; row < rows; row++) {
+			double y = sideLength*row;
+			for (int col = 0; col < cols; col++) {
+				double x = sideLength*col;
+
+				int expected = 2;
+				if (row > 0 && row < rows - 1) {
+					expected++;
+				}
+				if (col > 0 && col < cols - 1) {
+					expected++;
+				}
+
+				ChessboardCornerGraph.Node n = cluster.findClosest(x, y);
+
+				assertEquals(expected, n.countEdges());
+			}
+		}
+	}
+
+	public ChessboardCornerClusterFinder<GrayU8> createAlg() {
+		return new ChessboardCornerClusterFinder<>(new DummyIntensitySquare());
+	}
+
+	/// Intensity that assumes everything is a flat square
+	private class DummyIntensitySquare extends ChessboardCornerEdgeIntensity<GrayU8> {
+
+		public DummyIntensitySquare() {
+			super(GrayU8.class);
+		}
+
+		@Override
+		public float process( ChessboardCorner ca, ChessboardCorner cb, double direction_a_to_b ) {
+			// in real images, if an edge have squares between it the edge intensity will be reduced because
+			// there are regions with no texture or direction of texture changes. This simulates that by
+			// degrading results which are farther than expected
+			double distance = UtilPoint2D_F64.distance(ca.x, ca.y, cb.x, cb.y);
+			double error = distance - sideLength;
+			return (float)(1.0/(error*error + 1.0));
+		}
+	}
+}

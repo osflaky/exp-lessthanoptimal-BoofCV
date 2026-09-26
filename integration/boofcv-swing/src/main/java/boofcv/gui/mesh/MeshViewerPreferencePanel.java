@@ -1,0 +1,131 @@
+/*
+ * Copyright (c) 2023, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.gui.mesh;
+
+import boofcv.gui.StandardAlgConfigPanel;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Objects;
+
+/**
+ * Lets the user configure controls and provides help explaining how to control.
+ *
+ * @author Peter Abeles
+ */
+public class MeshViewerPreferencePanel extends StandardAlgConfigPanel {
+	// Shows user interface controls
+	JComboBox<String> comboControls;
+
+	// Allows the user to hide the help. Good for screenshots
+	JCheckBox checkHide;
+
+	// Help about controls
+	JTextArea textArea = new JTextArea();
+
+	// The owner
+	MeshViewerPanel panel;
+
+	// button which shows / selects the cloud's background
+	protected final JButton bColorBackGround = new JButton();
+
+	/**
+	 *
+	 * @param panel The viewer that this is adjusting
+	 */
+	public MeshViewerPreferencePanel( MeshViewerPanel panel ) {
+		this.panel = panel;
+
+		checkHide = checkbox("Show Help", panel.helpButtonActive);
+		comboControls = combo(0, new ArrayList<>(panel.controls.keySet()).toArray());
+
+		textArea.setEditable(false);
+		textArea.setWrapStyleWord(true);
+		textArea.setLineWrap(true);
+		textArea.setFont(new Font("monospaced", Font.PLAIN, 12));
+
+		// Create a button that's a small square with a black border
+		bColorBackGround.setPreferredSize(new Dimension(24, 24));
+		bColorBackGround.setMinimumSize(bColorBackGround.getPreferredSize());
+		bColorBackGround.setMaximumSize(bColorBackGround.getPreferredSize());
+		bColorBackGround.setBorder(BorderFactory.createLineBorder(Color.BLACK, 4));
+		bColorBackGround.setIcon(new FlatIcon());
+		bColorBackGround.setToolTipText("Click to change the background color");
+		bColorBackGround.addActionListener(e -> {
+			// Show a color picker dialog when pressed
+			Color newColor = JColorChooser.showDialog(
+					this,
+					"Background Color",
+					new Color(panel.getRenderBackgroundColor()));
+			if (newColor == null)
+				return;
+			bColorBackGround.repaint();
+			panel.setRenderBackgroundColor(newColor.getRGB());
+			panel.requestRender();
+		});
+
+		setHelpText();
+
+		addLabeled(comboControls, "Controls");
+		addLabeled(bColorBackGround, "Background");
+		addAlignLeft(checkHide);
+		addAlignCenter(textArea);
+
+		setPreferredSize(new Dimension(300, 400));
+	}
+
+	private void setHelpText() {
+		Swing3dCameraControl control = Objects.requireNonNull(panel.controls.get((String)comboControls.getSelectedItem()));
+
+		String text = """
+				h   Set view to home
+				j   Cycle colorization
+				k   Show depth image
+				""";
+		text += "\n" + control.getHelpText();
+
+		textArea.setText(text);
+	}
+
+	@Override public void controlChanged( final Object source ) {
+		if (source == comboControls) {
+			var selected = (String)comboControls.getSelectedItem();
+			panel.setActiveControl(selected);
+			setHelpText();
+		} else if (source == checkHide) {
+			panel.helpButtonActive = checkHide.isSelected();
+			panel.repaint();
+		}
+	}
+
+	private class FlatIcon implements Icon {
+		@Override
+		public void paintIcon( Component c, Graphics g, int x, int y ) {
+			g.setColor(new Color(panel.getRenderBackgroundColor()));
+			g.fillRect(0, 0, c.getWidth(), c.getHeight());
+		}
+
+		@Override
+		public int getIconWidth() {return 20;}
+
+		@Override
+		public int getIconHeight() {return 20;}
+	}
+}

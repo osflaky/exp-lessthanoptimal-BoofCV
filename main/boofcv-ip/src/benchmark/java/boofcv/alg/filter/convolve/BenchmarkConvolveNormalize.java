@@ -1,0 +1,118 @@
+/*
+ * Copyright (c) 2025, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.filter.convolve;
+
+import boofcv.alg.filter.convolve.normalized.ConvolveNormalizedNaive_SB;
+import boofcv.concurrency.BoofConcurrency;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
+
+import java.util.concurrent.TimeUnit;
+
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Warmup(iterations = 2)
+@Measurement(iterations = 5)
+@State(Scope.Benchmark)
+@Fork(value = 1)
+@SuppressWarnings({"UnusedDeclaration"})
+public class BenchmarkConvolveNormalize extends CommonBenchmarkConvolve_SB {
+	// One unrolled size and one arbitrary size
+	@Param({"3", "50"})
+	public int radius;
+
+	@Param({"true", "false"})
+	boolean concurrent;
+
+	@Setup public void setup() {
+		// larger images so that results are measurable
+		width = 3000;
+		height = 2000;
+		BoofConcurrency.USE_CONCURRENT = concurrent;
+		setup(radius);
+	}
+
+	// Need to use smaller images for 2D kernels
+	@State(Scope.Thread)
+	public static class State2D {
+		@Param({"3", "20"})
+		public int radius;
+
+		@Param({"true", "false"})
+		boolean concurrent;
+
+		@Setup(Level.Trial)
+		public void setup() {
+			CommonBenchmarkConvolve_SB.width = 800;
+			CommonBenchmarkConvolve_SB.height = 600;
+			BoofConcurrency.USE_CONCURRENT = concurrent;
+			CommonBenchmarkConvolve_SB.setup(radius);
+		}
+	}
+
+	@Benchmark public void Horizontal_Naive_F32() {
+		ConvolveNormalizedNaive_SB.horizontal(kernelF32, input_F32, out_F32);
+	}
+
+	@Benchmark public void Horizontal_F32() {
+		ConvolveImageNormalized.horizontal(kernelF32,input_F32,out_F32);
+	}
+
+	@Benchmark public void Horizontal_I8() {
+		ConvolveImageNormalized.horizontal(kernelI32,input_U8,out_U8);
+	}
+
+	@Benchmark public void Horizontal_I16() {
+		ConvolveImageNormalized.horizontal(kernelI32,input_U16,out_S16);
+	}
+
+	@Benchmark public void Vertical_F32() {
+		ConvolveImageNormalized.vertical(kernelF32, input_F32, out_F32);
+	}
+
+	@Benchmark public void Vertical_I8() {
+		ConvolveImageNormalized.vertical(kernelI32,input_U8,out_U8);
+	}
+
+	@Benchmark public void Vertical_I16() {
+		ConvolveImageNormalized.vertical(kernelI32,input_U16,out_S16);
+	}
+
+	@Benchmark public void Convolve2D_F32(State2D s) {
+		ConvolveImageNormalized.convolve(kernel2D_F32, input_F32, out_F32);
+	}
+
+	@Benchmark public void Convolve2D_I8(State2D s) {
+		ConvolveImageNormalized.convolve(kernel2D_I32, input_U8, out_U8);
+	}
+
+	public static void main( String[] args ) throws RunnerException {
+		Options opt = new OptionsBuilder()
+				.include(BenchmarkConvolveNormalize.class.getSimpleName())
+				.warmupTime(TimeValue.seconds(1))
+				.measurementTime(TimeValue.seconds(1))
+				.build();
+
+		new Runner(opt).run();
+	}
+}

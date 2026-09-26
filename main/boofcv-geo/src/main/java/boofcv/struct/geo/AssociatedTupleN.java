@@ -1,0 +1,114 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.struct.geo;
+
+import boofcv.misc.BoofMiscOps;
+import georegression.struct.point.Point2D_F64;
+import org.ejml.MapPrintFormat;
+import org.ejml.MatrixPrintFormat;
+
+/**
+ * Associated set of {@link Point2D_F64} for an arbitrary number of views that is fixed.
+ *
+ * @author Peter Abeles
+ */
+public class AssociatedTupleN implements AssociatedTuple {
+	/** Set of associated observations */
+	public final Point2D_F64[] p;
+
+	public AssociatedTupleN( int num ) {
+		p = new Point2D_F64[num];
+		for (int i = 0; i < num; i++) {
+			p[i] = new Point2D_F64();
+		}
+	}
+
+	public AssociatedTupleN( final Point2D_F64... src ) {
+		p = new Point2D_F64[src.length];
+		for (int i = 0; i < src.length; i++) {
+			p[i] = src[i].copy();
+		}
+	}
+
+	@Override public double getX( int index ) {
+		return p[index].x;
+	}
+
+	@Override public double getY( int index ) {
+		return p[index].y;
+	}
+
+	@Override public Point2D_F64 get( int index ) {
+		return p[index];
+	}
+
+	@Override public void set( int index, double x, double y ) {
+		p[index].setTo(x, y);
+	}
+
+	@Override public void set( int index, Point2D_F64 src ) {
+		p[index].setTo(src);
+	}
+
+	@Override public int size() {
+		return p.length;
+	}
+
+	@Override public AssociatedTuple setTo( AssociatedTuple src ) {
+		BoofMiscOps.checkTrue(src.size() == size());
+
+		for (int i = 0; i < p.length; i++) {
+			p[i].setTo(src.get(i));
+		}
+
+		return this;
+	}
+
+	@Override public void zero() {
+		for (int i = 0; i < p.length; i++) {
+			p[i].zero();
+		}
+	}
+
+	@Override public String format( MatrixPrintFormat format ) {
+		var builder = new StringBuilder();
+		builder.append(format.prefix);
+		for (int i = 0; i < p.length; i++) {
+			builder.append(p[i].format(format));
+			if (i < p.length - 1)
+				builder.append(format.rowSeparator);
+		}
+		builder.append(format.suffix);
+		return builder.toString();
+	}
+
+	@Override public String formatMap( MapPrintFormat format ) {
+		var builder = new StringBuilder();
+		builder.append(format.listPrefix);
+		for (int i = 0; i < p.length; i++) {
+			builder.append(p[i].formatMap(format));
+			if (i < p.length - 1)
+				builder.append(format.itemSeparator);
+		}
+		builder.append(format.listSuffix);
+		return builder.toString();
+	}
+
+	@Override public String toString() {return MapPrintFormat.DEFAULT.toString(this);}
+}

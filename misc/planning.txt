@@ -1,0 +1,274 @@
+- Image Processing
+  - TODO hough circle detector
+- SLAM
+  - TODO traditional monocular SLAM
+- Regression
+  - TODO Template matching
+- Scene Reconstruction
+  - TODO Robust optimization
+  - TODO 3D reconstruction to 3D mesh
+- Regression
+  - TODO Video stabilization
+  - TODO Template matching
+- Calibration
+  - TODO calibration targets Hamming Marker grid and chessboard, e.g. ChArUco and ArUco grids.
+- SLAM
+  - TODO Stereo
+
+TODO Applications for self calibration mono and stereo
+TODO Monocular VO
+
+TODO DB
+    - Check all views when merging scenes for consistency
+    - Root cause why it diverges if you consider too many images
+    - Metric: Expand using 2-views
+    - Metric: Initialize using 2-views
+    - Ransac: Tell it the minimum threshold and abort early if it can't be meet?
+    - Ransac: Specify max iterations using probability instead?
+    * Pruning of views when creating pairwise graph. If too similar do not include it. Could be done before pairwise
+      Should be able to process a video sequence where it's static for several frames
+
+TODO Image Stitching: N-View stitching https://github.com/lessthanoptimal/BoofCV/issues/167
+TODO Uncalibrated Stereo: Figure out why it seems to select an invalid solution when it got almost everything right.
+TODO NonMaximum: consider making radius ConfigLength and relative to sqrt(pixels)
+TODO Would subpixel corners make repeatability better?
+TODO RANSAC: provide way to feed in candidate models before it starts
+TODO Galvez-Lopez, Tardos, "Bag of Binary Words for Fast Place Recognition in Image Sequences" 2012
+TODO Application FiducialDetection add new fiducials to this
+
+----------Next Release
+
+TODO PointTracker
+  - Redesign PointTrackerTwoPass into PointTrackerHint
+    * Could this be done by adding two functions: hint(motion) and undo() to undo the last association
+  - Update Visual Odometry to use this new API when it makes sense
+    * This would be similar to the old two-pass VO approach which got removed
+
+TODO Sparse Disparity Undistort using camera model
+TODO Stereo Feature Association
+   - Formalize with a factory
+   - Do everything that greedy does now
+   - Take in max distance as a parameter too
+   - Verify that it doesn't allow impossible associations either
+
+NOTES: Format lint checks
+ - Checkstyle can't be used since it does not allow for concise blocks and there is no built in way to just run on
+   files that have been changed
+ - Spotless is best option so far, but finding a flexible formatter is challenging. Might need to install eclipse
+
+TODO Chessboard X-Corner
+ - Try computing Eigen corners first, then X-Corner scores for speed
+ - Make refined X-Corner a relative threshold
+ - Improve clustering. One image in Chessboard 2 should have pass but failed. MotionBlur image26, ... etc
+
+TODO Geometry Wish List
+   - Triangulation refine which minimizes pixel error
+   - P3P equivalent for multiple cameras with known relationships
+   - Given a trifocal tensor from normalize image coordinates, go straight to SE3
+   - Is it possible to compute trifocal from fewer observations when normalized image coordinates
+   - Trifocal -> camera matrices seems to not yield stable camera calibration estimates
+     give it observations as normalized coordinates and K isn't identity
+
+TODO Tech Reports
+   - new chessboard detector
+   - assisted calibration
+   - ine fitting
+   - stereo
+   - thresholding
+   - contours and blobs
+
+TODO Videos - hough line detectors
+            - chessboard corner detector + improvements
+            - stereo and VO updates
+
+TODO assisted self calibration
+TODO concurrent dense features?
+TODO Estimate focal lengths given disparity image
+TODO Scharr gradient http://www.hlevkin.com/articles/SobelScharrGradients5x5.pdf
+TODO That new sorting algorithm which is better than quick sort
+
+TODO SGM - Consider YDX order. Profile to see if it's faster
+TODO Calibration
+ - TODO Calibrate using partially obscured chessboard patterns
+ - TODO Add ability to remove images and recalibrate from application
+ - TODO change high level API to be able to return more than one pattern. String ID
+
+TODO Perspective-n-conic
+TODO Find an algorithm which solves for pose of a stereo camera system from two observation pairs.
+
+TODO Self Calibration from Camera Matrices - SelfCalibrationLinearDualQuadratic
+  - Identify as many edge cases as possible and develop specialized solutions if needed
+  - camera translates only along 2 DOF
+  - Unknown apsect fails but known doesn't. See ProjectiveToMetricReconstruction tests
+
+TODO
+  - Circle Target Detection
+    * three choices; center point, tangent points, or conics.
+    * center = "Detection of Concentric Circles for Camera Calibration" or use ellipse center like most?
+
+TODO Regression
+  - homography estimation
+  - QR Code fiducial 3D pose regression
+  - Line detector regression
+
+TODO
+  - QR Code
+    * Target 100% in rotation and not degrading anything else
+  - Self Calibration
+    * TODO Weighted iterated DIAC
+
+  - Examples
+    * Planar World Simulator
+    * Point Cloud Viewer
+  - Demonstrations
+    * Associate with Fundamental - Select different algs + inliers
+    * Associate with Trifocal Tensor
+  - Cheirality
+    * Will also require a linear programming solution, e.g. simplex
+  - Remove dependency on OpenCV in Applications to reduce file size
+
+- TODO Scene Reconstruction
+   - TODO handle situation where images are removed and exception is thrown
+   - TODO Create generic image feature matching for ordered sequences of images
+   - TODO homogeneous coordinates
+- TODO Sparse Bundle Adjustment
+   - Future: sparse block math
+
+- TODO Compare BoofCV's IPPE against original
+
+- TODO determine why solving for nullspace with QRP causes decoding regression to get worse
+
+- Stereo Disparity
+  * Optimise Census Transform block code. Can make about 4x faster
+  * Optimise NCC
+
+TOP ITEMS
+- TODO QR Code algorithm
+  * Better rejection of finder patterns using graph
+  * See if a better reading of mode bits is needed
+  * Reading mode and version. For small qr codes use the lines connecting position patterns
+    those will be more reliable than the sides
+- TODO Handle transposed data matrix in QR
+   - Add a flag to configuration to considered transposed markers
+   - Change code so that the matrix is read in and saved
+   - Note that the QR code is non compliant and complain
+   - Unit a test image or render it? Flip image? Add to regression
+
+- TODO Visualization tools for Direct VO
+-      Show warped image
+- TODO Tutorial on image features?  Sparse and dense?
+- TODO Look at AKAZE feature
+- TODO Clarify how you calibrate the camera in Processing
+- TODO DescribeDenseHogFastAlg naming consistency. See TODO at top
+
+- Create a fully automated build script for creating source and library zip and uploading them
+- integrate into this a script which will check the readme and other files for out of date references to the old version
+  check date in readme to see if it's correct
+
+Less High Priority Next Release
+
+- Concurrency
+  * KLT
+  * Association
+  * Stereo disparity
+  * Dense Features
+
+- Filters
+  * Median Filter: When even there's an number do average of two median terms
+
+- 16-bit images
+  * Binary Thresholding - Improved handling of 16-bit images
+
+- Sparse Bundle Adjustment
+  * Improve LM implementation so that it doesn't have to take a full gradient step if that's too big
+  * sparse block math
+  * parameterize rotation. Rotation +x unit vector  around Z then local Y. Use vector for axis-angle
+    - 3 parameters, no normalization I think
+
+- Polyline
+  * Fit a large contour where only a small part of it is a square. Use found corners in fiducials
+  * need to still be very fast and reject false positives
+
+- Calibration Target Clustering
+  * Random shapes can find their way into the grip
+  * Needing to be able to process fisheye images makes it hard to disconnect
+  * Compensating with thresholding and other methods which will degrade performance in other environments
+
+- Thresholding
+  * Handle shadows better in calibration targets
+  * Identifisd 3 distributions and picks a threshold between the two smallest
+
+- Monocular Reconstruction
+  * "Live Dense Reconstruction with a Single Moving Camera" is probably a good starting point
+
+- SFM
+  * Naive implementation of DLS
+    http://www-users.cs.umn.edu/~stergios/papers/ICCV-11-DLS-PnP.pdf
+    https://code.google.com/archive/p/dls-pnp-python/downloads
+  * RPnP
+    A Robust O(n) Solution to the Perspective-n-Point Problem
+    https://xuchi.weebly.com/rpnp.html
+  * MLPNP - A REAL-TIME MAXIMUM LIKELIHOOD SOLUTION TO THE PERSPECTIVE-N-POINT PROBLEM
+  * P4P-L A general solution to the P4P problem for camera with unknown focal length
+  * 6-point trifocal tensor p401
+
+- Contour
+  * Encode the direction of the next pixel in the contour instead of the pixel directly.
+    Reduces memory overhead and is useful for shape analysis
+
+- Fiducials
+  * Detection:  Return bounding polygon in pixel coordinates (undistorted and distorted)?
+  * Testing: Change generic unit tests to render the marker
+             Render a marker with a lot of distortion.
+             So much that it should fail if not corrected properly
+  * Black Border:   See comment below
+
+- Regression
+  * Support binary features in Detect/Describe regression
+  * Standardized format which is easy for human and machine to read?
+    - This should enable easy automated checks for significant change
+  * Automate fault detection from regression tests
+  * Split runtime regression off from stability
+
+- Improve pose estimate for calibration fiducials
+
+- Assisted Calibration
+  * binary pattern grid
+  * Ability to change calibration model and recompute
+  * Ability to remove images and recompute
+
+Face Detectors
+ - https://github.com/nenadmarkus/pico
+ - http://libccv.org/doc/doc-scd/
+
+Future
+
+- Dense Features
+  * See if pruning low contrast regions improve scoring
+    - Prune X fraction per image or global threshold across all images
+    - Print debugging info to help with tuning?
+  * See if different image sampling methods can improve scene recognition
+
+- Fiducial Square
+  * Regression tests that can determine if orientation is consistent
+    - If multiple squares on same surface see if their orientation is the same
+  * Image fiducial. Look at all the images and compute pixel weighting of pattern based on variance.
+                     Put all patterns which meet the correctness fraction then use the weighted sum to
+                     select the winner.
+  * For is black border black test, ignore the outer and inner most pixels to reduce false negative rate
+  * Consider alternative algorithm for small (or all) squares. Contour -> gradient -> cluster/hough
+  * When optimizing the edges don't sample points tangent to the line sample points parallel to the adjacent sides
+    that way it will sample inside the square more often. Maybe interpolate between slope of both sides?
+  * Look at alternative methods for generatng interpolated inner image. bilinear is probably exagerating. surface integral?
+
+- Look at OpenCV's watershed example. It's actually a useful technique!
+
+- Background Model
+  * Shadow removal
+  * remove support for Planar once Interleaved is supported enough
+
+- ImplSsdCorner_S16
+  * Handle the border. Currently is is just skipped
+  * If the image is resized that will cause problems since the border can affect the location of local
+    maximums
+  * Create a generic function for handling borders?  Give it a function and it returns a solution?

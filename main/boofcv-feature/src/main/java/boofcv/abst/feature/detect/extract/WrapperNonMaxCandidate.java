@@ -1,0 +1,96 @@
+/*
+ * Copyright (c) 2025, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.abst.feature.detect.extract;
+
+import boofcv.alg.feature.detect.extract.NonMaxCandidate;
+import boofcv.struct.ListIntPoint2D;
+import boofcv.struct.image.GrayF32;
+import org.jetbrains.annotations.Nullable;
+
+/// Wrapper around the [boofcv.alg.feature.detect.extract.NonMaxCandidate] class.
+public class WrapperNonMaxCandidate<Storage> implements NonMaxSuppression<Storage> {
+	NonMaxCandidate<Storage> extractor;
+	boolean minimums, maximums;
+
+	public WrapperNonMaxCandidate( NonMaxCandidate.Search search, boolean minimums, boolean maximums ) {
+		this.extractor = new NonMaxCandidate<>(search);
+		this.minimums = minimums;
+		this.maximums = maximums;
+	}
+
+	public WrapperNonMaxCandidate( NonMaxCandidate<Storage> extractor, boolean minimums, boolean maximums ) {
+		this.extractor = extractor;
+		this.minimums = minimums;
+		this.maximums = maximums;
+	}
+
+	@Override public void storageAccess( Add<Storage> opAdd, Reset<Storage> opReset ) {
+		this.extractor.storageAccess(opAdd, opReset);
+	}
+
+	@Override public float getThresholdMinimum() {
+		return extractor.getThresholdMin();
+	}
+
+	@Override public float getThresholdMaximum() {
+		return extractor.getThresholdMax();
+	}
+
+	@Override public void setThresholdMinimum( float threshold ) {
+		extractor.setThresholdMin(threshold);
+	}
+
+	@Override public void setThresholdMaximum( float threshold ) {
+		extractor.setThresholdMax(threshold);
+	}
+
+	@Override public void setIgnoreBorder( int border ) {
+		extractor.setBorder(border);
+	}
+
+	@Override public int getIgnoreBorder() {
+		return extractor.getBorder();
+	}
+
+	@Override public void process( GrayF32 intensity,
+								   @Nullable ListIntPoint2D candidateMin, @Nullable ListIntPoint2D candidateMax,
+								   @Nullable Storage foundMin, @Nullable Storage foundMax ) {
+		extractor.process(intensity, candidateMin, candidateMax, foundMin, foundMax);
+	}
+
+	@Override public boolean getUsesCandidates() {
+		return true;
+	}
+
+	@Override public void setSearchRadius( int radius ) {
+		extractor.setSearchRadius(radius);
+	}
+
+	@Override public int getSearchRadius() {
+		return extractor.getSearchRadius();
+	}
+
+	@Override public boolean canDetectMinimums() {
+		return minimums;
+	}
+
+	@Override public boolean canDetectMaximums() {
+		return maximums;
+	}
+}

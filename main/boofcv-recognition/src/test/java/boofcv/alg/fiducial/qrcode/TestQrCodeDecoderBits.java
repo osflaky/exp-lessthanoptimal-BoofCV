@@ -1,0 +1,135 @@
+/*
+ * Copyright (c) 2022, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.fiducial.qrcode;
+
+import boofcv.testing.BoofStandardJUnit;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class TestQrCodeDecoderBits extends BoofStandardJUnit {
+	@Test public void applyErrorCorrection() {
+		QrCode qr = new QrCodeEncoder().addNumeric("923492348985").fixate();
+
+		var alg = new QrCodeDecoderBits(EciEncoding.UTF8, EciEncoding.BINARY);
+
+		byte[] original = new byte[qr.rawbits.length];
+		System.arraycopy(qr.rawbits, 0, original, 0, original.length);
+
+		// perfect message with no errors
+		assertTrue(alg.applyErrorCorrection(qr));
+
+		assertEquals(0, qr.totalBitErrors);
+		int dataSize = qr.getNumberOfDataBytes();
+		for (int i = 0; i < dataSize; i++) {
+			assertEquals(original[i], qr.corrected[i]);
+		}
+
+		// add noise and try again
+		qr.rawbits[5] ^= (byte)0b1101001011;
+		qr.corrected = null;
+
+		assertTrue(alg.applyErrorCorrection(qr));
+		assertTrue(qr.totalBitErrors > 0);
+
+		for (int i = 0; i < dataSize; i++) {
+			assertEquals(original[i], qr.corrected[i]);
+		}
+		// add too much noise and it should fail
+		for (int i = 0; i < 10; i++) {
+			qr.rawbits[6 + i] = (byte)(qr.rawbits[i] + 234);
+		}
+		qr.corrected = null;
+
+		assertFalse(alg.applyErrorCorrection(qr));
+	}
+
+	@Test public void alignToBytes() {
+		assertEquals(0, QrCodeDecoderBits.alignToBytes(0));
+		assertEquals(8, QrCodeDecoderBits.alignToBytes(1));
+		assertEquals(8, QrCodeDecoderBits.alignToBytes(7));
+		assertEquals(8, QrCodeDecoderBits.alignToBytes(8));
+		assertEquals(16, QrCodeDecoderBits.alignToBytes(9));
+	}
+
+	@Test public void checkPaddingBytes() {
+		QrCode qr = new QrCodeEncoder().addNumeric("923492348985").fixate();
+
+		var alg = new QrCodeDecoderBits(EciEncoding.UTF8, EciEncoding.BINARY);
+
+		qr.corrected = new byte[50];
+
+		assertFalse(alg.checkPaddingBytes(qr, 2));
+
+		// fill it with the pattern
+		for (int i = 2; i < qr.corrected.length; i++) {
+			if (i%2 == 0) {
+				qr.corrected[i] = 0b00110111;
+			} else {
+				qr.corrected[i] = (byte)0b10001000;
+			}
+		}
+
+		assertTrue(alg.checkPaddingBytes(qr, 2));
+
+		// Test failure conditions now
+		assertFalse(alg.checkPaddingBytes(qr, 3));
+		qr.corrected[8] ^= (byte)0x1101;
+		assertFalse(alg.checkPaddingBytes(qr, 2));
+	}
+
+	/**
+	 * Test against example from specification
+	 */
+	@Test public void decodeEci_IsoExample() {
+		var bits = new PackedBits8();
+		// ECI Assignment number
+		bits.append(0b00001001, 8, false);
+
+		var alg = new QrCodeDecoderBits(EciEncoding.UTF8, EciEncoding.BINARY);
+
+		int newBit = alg.decodeEci(bits, 0);
+		assertEquals("ISO8859_7", alg.encodingEci);
+		assertEquals(8, newBit);
+	}
+
+
+	/**
+	 * Feed in a message which isn't encoded correctly and should cause an exception. It shouldn't
+	 * actually throw the exception.
+	 */
+	@Test void invalidEncoding() {
+		QrCode qr = new QrCodeEncoder().addAlphanumeric("ABCD123").fixate();
+
+		var alg = new QrCodeDecoderBits(EciEncoding.UTF8, EciEncoding.BINARY);
+
+		// This will fill in the corrected array, which is needed for decoding
+		alg.applyErrorCorrection(qr);
+
+		// Sanity check
+		assertTrue(alg.decodeMessage(qr));
+
+		// Scramble the data
+		qr.corrected[3] = (byte)0xFF;
+
+		// See if it gracefully handled the issue
+		assertFalse(alg.decodeMessage(qr));
+		assertEquals(qr.failureCause, QrCode.Failure.DECODING_MESSAGE);
+	}
+}

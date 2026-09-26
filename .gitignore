@@ -1,0 +1,19 @@
+.gradle
+.idea/libraries
+*.class
+*.jar
+**/*.iml
+**/*.ipr
+.DS_Store
+BoofVersion.java
+Project.xml
+
+### Gradle ###
+**/build/
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+# Adding to allow local changes to avoid problems in IntelliJ
+build.gradle
+
+# Machine specific. Points the Android build at a local SDK.
+local.properties

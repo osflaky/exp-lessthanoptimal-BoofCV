@@ -1,0 +1,121 @@
+/*
+ * Copyright (c) 2026, Peter Abeles. All Rights Reserved.
+ *
+ * This file is part of BoofCV (http://boofcv.org).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package boofcv.alg.distort.brown;
+
+import boofcv.misc.ConfigConverge;
+import boofcv.struct.distort.Point2Transform2_F64;
+import georegression.misc.GrlConstants;
+import georegression.struct.point.Point2D_F64;
+import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Converts the observed distorted normalized image coordinates into undistorted normalized image coordinates.
+ *
+ * @author Peter Abeles
+ */
+@SuppressWarnings({"NullAway.Init"})
+public class RemoveBrownNtoN_F64 implements Point2Transform2_F64 {
+	public static final int DEFAULT_ITERATIONS = 500;
+
+	// distortion parameters
+	protected RadialTangential_F64 params;
+
+	/// Convergence criterial. gtol is ignored.
+	@Getter protected ConfigConverge converge = new ConfigConverge(GrlConstants.DCONV_TOL_A, 0, DEFAULT_ITERATIONS);
+
+	public RemoveBrownNtoN_F64() {}
+
+	public RemoveBrownNtoN_F64( double tol ) {
+		setConvergence(tol, DEFAULT_ITERATIONS);
+	}
+
+	public void setConvergence( /**/double ftol, int maxIterations ) {
+		converge.setTo(ftol, 0, maxIterations);
+	}
+
+	public RemoveBrownNtoN_F64 setDistortion( @Nullable /**/double[] radial, /**/double t1, /**/double t2 ) {
+		params = new RadialTangential_F64(radial, t1, t2);
+		return this;
+	}
+
+	/**
+	 * Removes radial distortion
+	 *
+	 * @param x Distorted x-coordinate normalized image coordinate
+	 * @param y Distorted y-coordinate normalized image coordinate
+	 * @param out Undistorted normalized coordinate.
+	 */
+	@Override public void compute( double x, double y, Point2D_F64 out ) {
+		removeRadial(x, y, params.radial, params.t1, params.t2, out, (double)converge.ftol, converge.maxIterations);
+	}
+
+	@Override public RemoveBrownNtoN_F64 copyConcurrent() {
+		var ret = new RemoveBrownNtoN_F64();
+		ret.converge.setTo(converge);
+		ret.params = new RadialTangential_F64(this.params);
+		return ret;
+	}
+
+	/**
+	 * Static function for removing radial and tangential distortion
+	 *
+	 * @param x Distorted x-coordinate normalized image coordinate
+	 * @param y Distorted y-coordinate normalized image coordinate
+	 * @param radial Radial distortion parameters
+	 * @param t1 tangential distortion
+	 * @param t2 tangential distortion
+	 * @param out Undistorted normalized image coordinate
+	 * @param tol convergence tolerance
+	 * @param maxIterations The maximum number of iterations it will perform before stopping
+	 */
+	public static void removeRadial( double x, double y, double[] radial, double t1, double t2,
+									 Point2D_F64 out, final double tol, final int maxIterations ) {
+		double origX = x;
+		double origY = y;
+
+		double prevSum = 0;
+
+		for (int iter = 0; iter < maxIterations; iter++) {
+
+			// estimate the radial distance
+			double r2 = x*x + y*y;
+			double ri2 = r2;
+
+			double sum = 0;
+			for (int i = 0; i < radial.length; i++) {
+				sum += radial[i]*ri2;
+				ri2 *= r2;
+			}
+
+			double tx = 2.0*t1*x*y + t2*(r2 + 2.0*x*x);
+			double ty = t1*(r2 + 2.0*y*y) + 2.0*t2*x*y;
+
+			x = (origX - tx)/(1.0 + sum);
+			y = (origY - ty)/(1.0 + sum);
+
+			if (Math.abs(prevSum - sum) <= tol) {
+				break;
+			} else {
+				prevSum = sum;
+			}
+		}
+		out.setTo(x, y);
+	}
+}
